@@ -6,12 +6,12 @@ import os
 def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(settings.LOG_LEVEL)
-    LOG_FILE = settings.LOG_FILE
+    LOG_FILE = str(settings.log_file)
     
     # 로그 디렉토리 생성
-    log_dir = os.path.dirname(LOG_FILE)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    log_dir = settings.log_dir
+    if not log_dir.exists():
+        log_dir.mkdir(parents=True, exist_ok=True)
     
     if not logger.handlers:
         file_handler = ConcurrentRotatingFileHandler(
@@ -34,7 +34,7 @@ def get_logger(name):
 def read_log_file(lines=1000):
     """로그 파일의 마지막 N줄을 읽어옵니다."""
     try:
-        with open(settings.LOG_FILE, 'r', encoding='utf-8') as f:
+        with open(settings.log_file, 'r', encoding='utf-8') as f:
             all_lines = f.readlines()
             return all_lines[-lines:] if len(all_lines) > lines else all_lines
     except FileNotFoundError:

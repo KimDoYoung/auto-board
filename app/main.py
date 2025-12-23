@@ -106,7 +106,7 @@ def add_events(app: FastAPI):
         logger.info(f"🌐 Host: {settings.HOST}:{settings.PORT}")
         logger.info(f"🐛 Debug: {'✅ ON' if settings.DEBUG else '❌ OFF'}")
         logger.info(f"📝 Log Level: {settings.LOG_LEVEL}")
-        logger.info(f"📂 Log Directory: {settings.LOG_DIR}")
+        logger.info(f"📂 Log Directory: {settings.log_dir}")
         logger.info(f"💾 Base Directory: {settings.BASE_DIR}")
         
         # DB 초기화

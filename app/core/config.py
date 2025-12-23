@@ -5,7 +5,13 @@ import os
 
 # 프로필 설정 (환경변수 AUTOBOARD_PROFILE 우선, 없으면 'local')
 active_profile = os.getenv("AUTOBOARD_PROFILE", "local")
+
 # 파일 로딩 순서: .env (공통) -> .env.{profile} (환경별 덮어쓰기)
+# 명시적으로 로드하여 해결 (Pydantic이 간혹 경로 문제로 못 읽을 수 있음)
+from dotenv import load_dotenv
+load_dotenv(".env")
+load_dotenv(f".env.{active_profile}", override=True)
+
 env_files = [".env", f".env.{active_profile}"]
 
 class Settings(BaseSettings):
@@ -27,8 +33,8 @@ class Settings(BaseSettings):
     
     # 로그 설정
     LOG_LEVEL: str = "INFO"
-    LOG_DIR: str = BASE_DIR + "/logs"
-    LOG_FILE: str = LOG_DIR + "/autoboard.log"
+    # LOG_DIR: str = BASE_DIR + "/logs"  <-- Removed, use property
+    # LOG_FILE: str = LOG_DIR + "/autoboard.log" <-- Removed, use property
 
     # 보안
     SECRET_KEY: str = "your-secret-key-change-this"
@@ -48,5 +54,13 @@ class Settings(BaseSettings):
     @property
     def files_path(self) -> Path:
         return Path(self.BASE_DIR) / self.FILES_DIR
+
+    @property
+    def log_dir(self) -> Path:
+        return Path(self.BASE_DIR) / "logs"
+
+    @property
+    def log_file(self) -> Path:
+        return self.log_dir / "autoboard.log"
 
 settings = Settings()
