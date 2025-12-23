@@ -87,10 +87,10 @@ def add_routes(app: FastAPI):
     """라우터 등록"""
     # 라우터 import는 여기서
     from app.routes.home import router as home_router
-    # from app.routes.board import router as board_router
+    from app.routes.board import router as board_router
     
     app.include_router(home_router)
-    # app.include_router(board_router, prefix="/boards", tags=["boards"])
+    app.include_router(board_router) # prefix is defined in board.py
 
 
 def add_events(app: FastAPI):
@@ -104,10 +104,11 @@ def add_events(app: FastAPI):
         logger.info(f"📋 Profile: {settings.PROFILE_NAME}")
         logger.info("=" * 60)
         logger.info(f"🌐 Host: {settings.HOST}:{settings.PORT}")
+        logger.info(f"💾 Base Directory: {settings.BASE_DIR}")
         logger.info(f"🐛 Debug: {'✅ ON' if settings.DEBUG else '❌ OFF'}")
         logger.info(f"📝 Log Level: {settings.LOG_LEVEL}")
         logger.info(f"📂 Log Directory: {settings.log_dir}")
-        logger.info(f"💾 Base Directory: {settings.BASE_DIR}")
+        logger.info(f"📂 DB Path: {settings.db_path}")
         
         # DB 초기화
         init_db()
