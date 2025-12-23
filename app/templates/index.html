@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Auto-Board{% endblock %}
+
+{% block content %}
+    {% include 'common/nav.html' %}
+    
+    <div class="p-8 max-w-7xl mx-auto w-full">
+        <div class="bg-white rounded-xl p-8 shadow-sm mt-8 border border-gray-100">
+            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-4">대시보드</h2>
+            <div class="text-gray-600 space-y-2">
+                <p>환영합니다, <strong class="text-indigo-600">{{ user.username }}</strong>님!</p>
+                <p>상단 메뉴에서 '기록물'을 선택하여 작업을 시작하세요.</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

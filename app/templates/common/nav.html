@@ -1,0 +1,51 @@
+<nav class="flex justify-between items-center bg-[#1e1e24] text-white px-6 py-2 shadow-md">
+    <!-- Navbar Start -->
+    <div class="flex items-center gap-8">
+        <a href="/" class="text-xl font-bold tracking-wide text-white hover:text-gray-200 transition-colors">
+            Auto-Board
+        </a>
+        
+        <!-- Menu -->
+        <div class="flex gap-5">
+            <!-- Dropdown -->
+            <div class="relative group">
+                <button class="flex items-center gap-1 text-gray-200 hover:text-[#a0a0ff] font-medium transition-colors py-2">
+                    기록물 
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                    </svg>
+                </button>
+                <!-- Dropdown Content -->
+                <div class="absolute hidden group-hover:block bg-[#2a2a35] min-w-[160px] shadow-xl rounded-lg top-full left-0 z-50 overflow-hidden ring-1 ring-white/10 animate-fade-in-down">
+                    <a href="#" class="block px-4 py-3 text-sm text-gray-200 hover:bg-[#3e3e4e] transition-colors">
+                        새로운 기록물
+                    </a>
+                    <a href="#" class="block px-4 py-3 text-sm text-gray-200 hover:bg-[#3e3e4e] transition-colors border-t border-white/5">
+                        기록물 목록
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navbar End -->
+    <div class="flex items-center gap-4 text-sm">
+        <span class="text-gray-300">
+            안녕하세요, <strong class="text-white">{{ user.username }}</strong>님
+        </span>
+        <a href="/logout" class="bg-[#e63946] hover:bg-[#c1121f] text-white px-4 py-1.5 rounded text-sm transition-colors shadow-sm">
+            Logout
+        </a>
+    </div>
+</nav>
+
+<style>
+    /* Tailwind에서 기본 제공하지 않는 커스텀 애니메이션만 간단히 추가하거나 tailwind.config.js에 추가 가능 */
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-down {
+        animation: fadeInDown 0.2s ease-out;
+    }
+</style>
