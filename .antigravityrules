@@ -6,3 +6,13 @@
 4. **코드를 수정하기 전에 반드시 의논을 먼저** 해줘.
 5. 설계문서는 docs/design.md에 있음.
 6. uv로 가상환경을 사용한다.
+
+## 개발가이드
+
+1. 이 프로젝트는 json <-> html UI
+2. json <-> sqlite table
+3. meta data는 json으로 관리하는 것에 대한 설계를 따라야 한다.
+
+## 개발전략
+
+1. python 은 pytest

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"c:\\\\Users\\\\PC\\\\work\\\\auto-board\\\\app\\\\static\"\" 2>/dev/null || echo \"Directory not found \")",
+      "Bash(cat:*)",
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(npm view:*)",
+      "Bash(npm rm:*)",
+      "Bash(npx vitest:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)"
+    ]
+  }
+}

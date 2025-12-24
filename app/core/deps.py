@@ -1,3 +1,14 @@
+# deps.py
+"""
+모듈 설명: 
+    - db 연결, 토큰 검증, 현재 사용자 가져오기
+주요 기능:
+    
+
+작성자: 김도영
+작성일: 2025-12-24
+버전: 1.0
+"""
 from typing import Optional
 from fastapi import Request
 import jwt

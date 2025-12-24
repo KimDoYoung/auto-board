@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "outputStyle": "coding-friend"
+}

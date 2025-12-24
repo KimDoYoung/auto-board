@@ -1,3 +1,6 @@
+// Board Manager - DOM interaction and form handling
+// Pure logic functions are in board_manager_logic.js
+
 const boardManager = {
     rowCount: 0,
     createdBoardId: null,
@@ -66,15 +69,14 @@ const boardManager = {
         }
     },
 
+    /**
+     * Collect data from DOM and validate using board_manager_logic
+     * @returns {Object} Collected data or null if validation fails
+     */
     collectData: function () {
-        const name = document.getElementById('boardName').value;
-        const physical_table_name = document.getElementById('tableName').value;
+        const boardName = document.getElementById('boardName').value;
+        const tableName = document.getElementById('tableName').value;
         const note = document.getElementById('boardNote').value;
-
-        if (!name || !physical_table_name) {
-            alert('기록물 이름과 물리 테이블 이름은 필수입니다.');
-            return null;
-        }
 
         const fields = [];
         document.querySelectorAll('#columnsTable tbody tr').forEach(tr => {
@@ -86,26 +88,52 @@ const boardManager = {
             });
         });
 
-        // Validation for fields
-        for (let f of fields) {
-            if (!f.label || !f.name) {
-                alert('모든 컬럼의 라벨과 이름을 입력해주세요.');
+        // Use board_manager_logic.buildBoardData for validation
+        // This requires board_manager_logic to be available globally
+        if (typeof buildBoardData !== 'undefined') {
+            const result = buildBoardData({
+                boardName,
+                tableName,
+                note,
+                fields
+            });
+
+            if (!result.success) {
+                alert(result.error);
                 return null;
             }
-        }
 
-        return {
-            board: {
-                name: name,
-                physical_table_name: physical_table_name,
-                note: note
-            },
-            columns: {
-                fields: fields
+            return result.data;
+        } else {
+            // Fallback validation if logic not available
+            if (!boardName || !tableName) {
+                alert('기록물 이름과 물리 테이블 이름은 필수입니다.');
+                return null;
             }
-        };
+
+            for (let f of fields) {
+                if (!f.label || !f.name) {
+                    alert('모든 컬럼의 라벨과 이름을 입력해주세요.');
+                    return null;
+                }
+            }
+
+            return {
+                board: {
+                    name: boardName,
+                    physical_table_name: tableName,
+                    note: note
+                },
+                columns: {
+                    fields: fields
+                }
+            };
+        }
     },
 
+    /**
+     * Create board via API
+     */
     createBoard: function () {
         const data = this.collectData();
         if (!data) return;
@@ -130,6 +158,8 @@ const boardManager = {
                     this.createdBoardId = result.board_id;
                     alert('기록물이 성공적으로 생성되었습니다! (ID: ' + this.createdBoardId + ')');
                     this.onCreationSuccess();
+                } else {
+                    alert('생성 중 오류가 발생했습니다: ' + (result.message || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
@@ -169,7 +199,7 @@ const boardManager = {
     }
 };
 
-// Initialize
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     boardManager.init();
 });
