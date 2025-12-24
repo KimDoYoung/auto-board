@@ -15,53 +15,58 @@ load_dotenv(f".env.{active_profile}", override=True)
 env_files = [".env", f".env.{active_profile}"]
 
 class Settings(BaseSettings):
+    #---------------------------------------------------------
     # 앱 기본 정보
+    #---------------------------------------------------------
     APP_NAME: str = "Auto-Board"
     VERSION: str = "0.0.1"
-    PROFILE_NAME: str = active_profile
-    
-    # 서버 설정
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    RELOAD: bool = True
-    DEBUG: bool = True
-        
-    # 데이터 디렉토리
-    BASE_DIR: str = "./data"
-    DB_DIR: str = BASE_DIR + "/db"
-    DB_NAME: str = "autoboard.db"
-    FILES_DIR: str = "files"
-    
-    # 로그 설정
-    LOG_LEVEL: str = "INFO"
-    # LOG_DIR: str = BASE_DIR + "/logs"  <-- Removed, use property
-    # LOG_FILE: str = LOG_DIR + "/autoboard.log" <-- Removed, use property
 
-    # 보안
-    SECRET_KEY: str = "your-secret-key-change-this"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    #---------------------------------------------------------
+    # 프로필
+    #---------------------------------------------------------
+    # Note: os.getenv in default is fine, but Pydantic reads env vars automatically if configs are set.
+    # We will keep explicit defaults as requested.
+    PROFILE_NAME: str = os.getenv("AUTOBOARD_PROFILE", "local")
     
+    #---------------------------------------------------------
+    # 데이터 디렉토리 (Path objects for easy usage)
+    #---------------------------------------------------------
+    BASE_DIR: Path = Path(os.getenv("BASE_DIR", "./data"))
+    DB_DIR: Path = Path(os.getenv("DB_DIR", "./data/db"))
+    DB_NAME: str = os.getenv("DB_NAME", "autoboard.db")
+    
+    # Computed default for DB_PATH handled in explicit field or validator?
+    # Simpler to just define it if it's overridable, or use a method if purely computed.
+    # User had: self.DB_PATH = os.getenv("DB_PATH", "./data/db/autoboard.db")
+    DB_PATH: Path = Path(os.getenv("DB_PATH", "./data/db/autoboard.db"))
+
+    FILES_DIR: Path = Path(os.getenv("FILES_DIR", "./data/files"))
+       
+    #---------------------------------------------------------
+    # 보안
+    #---------------------------------------------------------
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-this")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+    
+    #---------------------------------------------------------
+    # 실행 
+    #---------------------------------------------------------
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", 8000))
+    # Boolean env var handling in simple os.getenv is tricky ("False" str is True). 
+    # Better to let Pydantic handle bool conversion from env, but we provide default.
+    RELOAD: bool = True 
+    DEBUG: bool = True
+    
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./data/logs"))
+    LOG_FILE: Path = Path(os.getenv("LOG_FILE", "./data/logs/autoboard.log"))
+
     model_config = SettingsConfigDict(
         env_file=env_files,
         env_ignore_empty=True,
         extra="ignore"
     )
-    
-    @property
-    def db_path(self) -> Path:
-        return Path(self.DB_DIR) / self.DB_NAME
-    
-    @property
-    def files_path(self) -> Path:
-        return Path(self.BASE_DIR) / self.FILES_DIR
-
-    @property
-    def log_dir(self) -> Path:
-        return Path(self.BASE_DIR) / "logs"
-
-    @property
-    def log_file(self) -> Path:
-        return self.log_dir / "autoboard.log"
 
 settings = Settings()

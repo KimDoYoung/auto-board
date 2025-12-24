@@ -6,7 +6,7 @@ from app.schemas.user import User  # Import schema
 import sqlite3
 
 def get_db_connection():
-    conn = sqlite3.connect(settings.db_path)
+    conn = sqlite3.connect(settings.DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
         yield conn
@@ -31,7 +31,7 @@ async def get_current_user_from_cookie(request: Request) -> Optional[User]:
         return None
 
     # DB에서 유저 확인
-    conn = sqlite3.connect(settings.db_path)
+    conn = sqlite3.connect(settings.DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM admin_users WHERE username = ?", (username,))

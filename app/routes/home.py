@@ -56,7 +56,7 @@ async def login(
     templates = get_templates(request)
     
     # DB에서 유저 확인
-    conn = sqlite3.connect(settings.db_path)
+    conn = sqlite3.connect(settings.DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM admin_users WHERE username = ?", (username,))

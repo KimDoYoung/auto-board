@@ -107,9 +107,9 @@ def add_events(app: FastAPI):
         logger.info(f"💾 Base Directory: {settings.BASE_DIR}")
         logger.info(f"🐛 Debug: {'✅ ON' if settings.DEBUG else '❌ OFF'}")
         logger.info(f"📝 Log Level: {settings.LOG_LEVEL}")
-        logger.info(f"📂 Log Directory: {settings.log_dir}")
-        logger.info(f"📂 Log File: {settings.log_file}")
-        logger.info(f"📂 DB Path: {settings.db_path}")
+        logger.info(f"📂 Log Directory: {settings.LOG_DIR}")
+        logger.info(f"📂 Log File: {settings.LOG_FILE}")
+        logger.info(f"📂 DB Path: {settings.DB_PATH}")
 
         # Uvicorn 로그도 파일에 남기도록 설정
         get_logger("uvicorn")
@@ -133,7 +133,7 @@ def add_events(app: FastAPI):
 
 def init_db():
     """데이터베이스 초기화"""
-    db_path = settings.db_path
+    db_path = settings.DB_PATH
     
     if not db_path.exists():
         logger.info(f"🆕 데이터베이스 파일이 없습니다. 생성을 시작합니다: {db_path}")
