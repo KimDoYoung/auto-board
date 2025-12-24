@@ -107,7 +107,6 @@ def add_events(app: FastAPI):
         logger.info(f"💾 Base Directory: {settings.BASE_DIR}")
         logger.info(f"🐛 Debug: {'✅ ON' if settings.DEBUG else '❌ OFF'}")
         logger.info(f"📝 Log Level: {settings.LOG_LEVEL}")
-        logger.info(f"📂 Log Directory: {settings.LOG_DIR}")
         logger.info(f"📂 Log File: {settings.LOG_FILE}")
         logger.info(f"📂 DB Path: {settings.DB_PATH}")
 
@@ -135,9 +134,9 @@ def init_db():
     """데이터베이스 초기화"""
     db_path = settings.DB_PATH
     
-    if not db_path.exists():
+    if not Path(db_path).exists():
         logger.info(f"🆕 데이터베이스 파일이 없습니다. 생성을 시작합니다: {db_path}")
-        db_path.parent.mkdir(parents=True, exist_ok=True)
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     
     # DB 연결 및 스키마 초기화 (파일 존재 여부 상관없이 테이블 없으면 생성 체크)
     try:

@@ -14,10 +14,6 @@ def get_file_handler():
         
     LOG_FILE = str(settings.LOG_FILE)
     
-    # 로그 디렉토리 생성
-    log_dir = settings.LOG_DIR
-    if not log_dir.exists():
-        log_dir.mkdir(parents=True, exist_ok=True)
         
     _file_handler = ConcurrentRotatingFileHandler(
         LOG_FILE, "a", 5*1024*1024, 7, encoding='utf-8'

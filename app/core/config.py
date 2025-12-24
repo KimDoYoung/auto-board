@@ -32,13 +32,8 @@ class Settings(BaseSettings):
     # 데이터 디렉토리 (Path objects for easy usage)
     #---------------------------------------------------------
     BASE_DIR: Path = Path(os.getenv("BASE_DIR", "./data"))
-    DB_DIR: Path = Path(os.getenv("DB_DIR", "./data/db"))
-    DB_NAME: str = os.getenv("DB_NAME", "autoboard.db")
+    DB_PATH: str = os.getenv("DB_PATH", "./data/db/autoboard.db")
     
-    # Computed default for DB_PATH handled in explicit field or validator?
-    # Simpler to just define it if it's overridable, or use a method if purely computed.
-    # User had: self.DB_PATH = os.getenv("DB_PATH", "./data/db/autoboard.db")
-    DB_PATH: Path = Path(os.getenv("DB_PATH", "./data/db/autoboard.db"))
 
     FILES_DIR: Path = Path(os.getenv("FILES_DIR", "./data/files"))
        
@@ -60,7 +55,6 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-    LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./data/logs"))
     LOG_FILE: Path = Path(os.getenv("LOG_FILE", "./data/logs/autoboard.log"))
 
     model_config = SettingsConfigDict(
@@ -68,5 +62,12 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore"
     )
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Ensure base and required sub-directories exist
+        self.BASE_DIR.mkdir(parents=True, exist_ok=True)
+        self.FILES_DIR.mkdir(parents=True, exist_ok=True)
+        self.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        Path(self.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 settings = Settings()
