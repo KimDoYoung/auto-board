@@ -3,32 +3,66 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler
 from app.core.config import settings
 import os
 
-def get_logger(name):
-    logger = logging.getLogger(name)
-    logger.setLevel(settings.LOG_LEVEL)
+
+# Global file handler to be reused
+_file_handler = None
+
+def get_file_handler():
+    global _file_handler
+    if _file_handler:
+        return _file_handler
+        
     LOG_FILE = str(settings.log_file)
     
     # 로그 디렉토리 생성
     log_dir = settings.log_dir
     if not log_dir.exists():
         log_dir.mkdir(parents=True, exist_ok=True)
+        
+    _file_handler = ConcurrentRotatingFileHandler(
+        LOG_FILE, "a", 5*1024*1024, 7, encoding='utf-8'
+    )
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    _file_handler.setFormatter(formatter)
+    return _file_handler
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(settings.LOG_LEVEL)
     
-    if not logger.handlers:
-        file_handler = ConcurrentRotatingFileHandler(
-            LOG_FILE, "a", 5*1024*1024, 7, encoding='utf-8'
-        )
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(formatter)
+    # Add file handler if not present
+    file_handler = get_file_handler()
+    if file_handler not in logger.handlers:
         logger.addHandler(file_handler)
         
-        if settings.PROFILE_NAME == "local":
-            console_handler = logging.StreamHandler()
+    # Add console handler if local and no handlers existed (to avoid double console logging if uvicorn set it up)
+    # But for fresh loggers, we want console.
+    # Simple check: if ONLY file handler is there (meaning we just added it), add console.
+    # Or strict check: if no StreamHandler.
+    
+    logger.disabled = False
+    
+    if settings.PROFILE_NAME == "local":
+        # FileHandler inherits from StreamHandler, so we must be specific
+        # We want to check if there is a handler that is strictly for console/stream (not a file)
+        has_console = any(
+            isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler) 
+            for h in logger.handlers
+        )
+        if not has_console:
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
+            # Force stdout
+            import sys
+            console_handler = logging.StreamHandler(sys.stdout)
             console_handler.setFormatter(formatter)
             logger.addHandler(console_handler)
 
     return logger
+
 
 # 로그 파일 읽기 함수 추가
 def read_log_file(lines=1000):

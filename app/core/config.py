@@ -28,6 +28,7 @@ class Settings(BaseSettings):
         
     # 데이터 디렉토리
     BASE_DIR: str = "./data"
+    DB_DIR: str = BASE_DIR + "/db"
     DB_NAME: str = "autoboard.db"
     FILES_DIR: str = "files"
     
@@ -49,7 +50,7 @@ class Settings(BaseSettings):
     
     @property
     def db_path(self) -> Path:
-        return Path(self.BASE_DIR) / self.DB_NAME
+        return Path(self.DB_DIR) / self.DB_NAME
     
     @property
     def files_path(self) -> Path:

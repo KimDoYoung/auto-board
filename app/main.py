@@ -108,7 +108,13 @@ def add_events(app: FastAPI):
         logger.info(f"🐛 Debug: {'✅ ON' if settings.DEBUG else '❌ OFF'}")
         logger.info(f"📝 Log Level: {settings.LOG_LEVEL}")
         logger.info(f"📂 Log Directory: {settings.log_dir}")
+        logger.info(f"📂 Log File: {settings.log_file}")
         logger.info(f"📂 DB Path: {settings.db_path}")
+
+        # Uvicorn 로그도 파일에 남기도록 설정
+        get_logger("uvicorn")
+        get_logger("uvicorn.access")
+        get_logger("uvicorn.error")
         
         # DB 초기화
         init_db()
