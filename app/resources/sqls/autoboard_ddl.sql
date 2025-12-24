@@ -17,6 +17,7 @@ create table if not exists boards(
     name text not null,
     physical_table_name text not null,
     note text,
+    is_attach_file boolean not null default 0,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp
 );

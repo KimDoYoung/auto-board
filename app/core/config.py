@@ -1,6 +1,7 @@
 # app/core/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
+from dotenv import load_dotenv
 import os
 
 # 프로필 설정 (환경변수 AUTOBOARD_PROFILE 우선, 없으면 'local')
@@ -8,7 +9,7 @@ active_profile = os.getenv("AUTOBOARD_PROFILE", "local")
 
 # 파일 로딩 순서: .env (공통) -> .env.{profile} (환경별 덮어쓰기)
 # 명시적으로 로드하여 해결 (Pydantic이 간혹 경로 문제로 못 읽을 수 있음)
-from dotenv import load_dotenv
+
 load_dotenv(".env")
 load_dotenv(f".env.{active_profile}", override=True)
 
