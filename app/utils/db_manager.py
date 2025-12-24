@@ -84,7 +84,73 @@ class DBManager:
         row = self.cursor.fetchone()
         if not row:
             return None
-        
+
+        try:
+            return json.loads(row[0])
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON in metadata")
+
+    def get_board_info(self, board_id: int) -> Optional[Dict[str, Any]]:
+        """보드 정보 조회"""
+        self.cursor.execute(
+            "SELECT id, name, physical_table_name, note, created_at, updated_at FROM boards WHERE id = ?",
+            (board_id,)
+        )
+        row = self.cursor.fetchone()
+        if not row:
+            return None
+
+        return {
+            "id": row[0],
+            "name": row[1],
+            "physical_table_name": row[2],
+            "note": row[3],
+            "created_at": row[4],
+            "updated_at": row[5]
+        }
+
+    def save_metadata(self, board_id: int, name: str, meta: Dict[str, Any]) -> None:
+        """메타데이터 저장 (upsert)"""
+        try:
+            meta_json = json.dumps(meta, ensure_ascii=False)
+
+            # 기존 메타데이터 확인
+            self.cursor.execute(
+                "SELECT id FROM meta_data WHERE board_id = ? AND name = ?",
+                (board_id, name)
+            )
+            existing = self.cursor.fetchone()
+
+            if existing:
+                # 업데이트
+                self.cursor.execute(
+                    "UPDATE meta_data SET meta = ? WHERE board_id = ? AND name = ?",
+                    (meta_json, board_id, name)
+                )
+            else:
+                # 새로 생성
+                self.cursor.execute(
+                    "INSERT INTO meta_data (board_id, name, meta, schema) VALUES (?, ?, ?, ?)",
+                    (board_id, name, meta_json, "v1")
+                )
+
+            self.conn.commit()
+            logger.info(f"✅ Metadata saved: board_id={board_id}, name={name}")
+        except Exception as e:
+            self.conn.rollback()
+            logger.error(f"❌ Error saving metadata: {e}")
+            raise e
+
+    def get_metadata(self, board_id: int, name: str) -> Optional[Dict[str, Any]]:
+        """메타데이터 조회"""
+        self.cursor.execute(
+            "SELECT meta FROM meta_data WHERE board_id = ? AND name = ?",
+            (board_id, name)
+        )
+        row = self.cursor.fetchone()
+        if not row:
+            return None
+
         try:
             return json.loads(row[0])
         except json.JSONDecodeError:

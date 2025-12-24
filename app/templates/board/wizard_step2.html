@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Step 2: 목록 설정 - Auto-Board{% endblock %}
+
+{% block content %}
+{% include 'common/nav.html' %}
+
+<div class="p-8 max-w-4xl mx-auto w-full">
+    <div class="space-y-8">
+        <!-- Progress Indicator -->
+        <div class="flex items-center justify-between">
+            <div class="flex-1">
+                <div class="flex justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">단계 2/5: 목록 설정</span>
+                    <span class="text-sm text-gray-500">40%</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full w-2/5 bg-indigo-500 rounded-full transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Board Info -->
+        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+            <p class="text-sm text-indigo-700">
+                <span class="font-semibold">{{ board.name }}</span> (ID: {{ board.id }})
+            </p>
+        </div>
+
+        <!-- List Display Settings -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">목록 화면 설정</h2>
+
+            <div class="space-y-8">
+                <!-- Display Mode -->
+                <div>
+                    <label class="block text-gray-700 font-medium mb-3">표시 방식</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="displayMode" value="table" checked class="w-4 h-4 text-indigo-600">
+                            <span class="text-gray-700">테이블</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="displayMode" value="card" class="w-4 h-4 text-indigo-600">
+                            <span class="text-gray-700">카드</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Columns to Display -->
+                <div>
+                    <label class="block text-gray-700 font-medium mb-3">표시할 항목 선택</label>
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-2 max-h-64 overflow-y-auto">
+                        {% for column in columns %}
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-white p-2 rounded transition">
+                            <input type="checkbox" class="display-column w-4 h-4 text-indigo-600 rounded" value="{{ column.name }}" checked>
+                            <div>
+                                <span class="font-medium text-gray-700">{{ column.label }}</span>
+                                <span class="text-xs text-gray-500 ml-2">({{ column.name }})</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer mb-3">
+                        <input type="checkbox" id="paginationEnabled" checked class="w-4 h-4 text-indigo-600">
+                        <span class="text-gray-700 font-medium">페이지네이션 사용</span>
+                    </label>
+                    <div id="paginationSettings" class="ml-8">
+                        <label class="block text-gray-700 text-sm mb-2">페이지당 항목 수</label>
+                        <input type="number" id="pageSize" value="20" min="5" max="100" step="5"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Sorting -->
+                <div>
+                    <label class="block text-gray-700 font-medium mb-3">기본 정렬</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">정렬 항목</label>
+                            <select id="sortColumn" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="id">ID</option>
+                                {% for column in columns %}
+                                <option value="{{ column.name }}">{{ column.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm mb-2">정렬 방향</label>
+                            <select id="sortOrder" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="desc">내림차순</option>
+                                <option value="asc">오름차순</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer mb-3">
+                        <input type="checkbox" id="searchEnabled" checked class="w-4 h-4 text-indigo-600">
+                        <span class="text-gray-700 font-medium">검색 기능 사용</span>
+                    </label>
+                    <div id="searchSettings" class="ml-8">
+                        <label class="block text-gray-700 text-sm mb-2">검색 가능 항목</label>
+                        <div class="bg-gray-50 rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
+                            {% for column in columns %}
+                            <label class="flex items-center gap-3 cursor-pointer hover:bg-white p-2 rounded transition">
+                                <input type="checkbox" class="search-column w-4 h-4 text-indigo-600 rounded" value="{{ column.name }}" checked>
+                                <div>
+                                    <span class="font-medium text-gray-700">{{ column.label }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">({{ column.name }})</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between gap-4">
+            <a href="/boards/new/step1"
+                class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
+                이전 단계
+            </a>
+            <button onclick="wizardStep2.submit()"
+                class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
+                다음 단계 (입력폼 설정)
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const wizardStep2 = {
+    getFormData() {
+        const displayColumns = Array.from(document.querySelectorAll('.display-column:checked')).map(el => el.value);
+        const searchColumns = Array.from(document.querySelectorAll('.search-column:checked')).map(el => el.value);
+
+        return {
+            list_config: {
+                display_mode: document.querySelector('input[name="displayMode"]:checked').value,
+                columns: displayColumns,
+                pagination: {
+                    enabled: document.getElementById('paginationEnabled').checked,
+                    page_size: parseInt(document.getElementById('pageSize').value)
+                },
+                sort: {
+                    enabled: true,
+                    column: document.getElementById('sortColumn').value,
+                    order: document.getElementById('sortOrder').value
+                },
+                search: {
+                    enabled: document.getElementById('searchEnabled').checked,
+                    searchable_columns: searchColumns
+                }
+            }
+        };
+    },
+
+    async submit() {
+        try {
+            const formData = this.getFormData();
+
+            if (formData.list_config.columns.length === 0) {
+                alert('최소 1개 이상의 표시 항목을 선택하세요.');
+                return;
+            }
+
+            const response = await fetch('/boards/new/step2/{{ board.id }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert('오류: ' + data.detail);
+                return;
+            }
+
+            window.location.href = data.redirect;
+        } catch (error) {
+            alert('오류: ' + error.message);
+        }
+    }
+};
+
+// Setup toggle handlers
+document.getElementById('paginationEnabled').addEventListener('change', (e) => {
+    document.getElementById('paginationSettings').classList.toggle('opacity-50 pointer-events-none', !e.target.checked);
+});
+
+document.getElementById('searchEnabled').addEventListener('change', (e) => {
+    document.getElementById('searchSettings').classList.toggle('opacity-50 pointer-events-none', !e.target.checked);
+});
+</script>
+{% endblock %}

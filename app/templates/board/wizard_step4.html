@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Step 4: 수정폼 설정 - Auto-Board{% endblock %}
+
+{% block content %}
+{% include 'common/nav.html' %}
+
+<div class="p-8 max-w-4xl mx-auto w-full">
+    <div class="space-y-8">
+        <!-- Progress Indicator -->
+        <div class="flex items-center justify-between">
+            <div class="flex-1">
+                <div class="flex justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">단계 4/5: 수정폼 설정</span>
+                    <span class="text-sm text-gray-500">80%</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full w-4/5 bg-indigo-500 rounded-full transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Board Info -->
+        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+            <p class="text-sm text-indigo-700">
+                <span class="font-semibold">{{ board.name }}</span> (ID: {{ board.id }})
+            </p>
+        </div>
+
+        <!-- Form Configuration -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">수정폼 설정 (기록 수정)</h2>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
+                <p class="font-semibold mb-1">💡 팁:</p>
+                <p>수정폼은 신규 작성 폼과 동일할 수도, 다를 수도 있습니다. 예를 들어, "작성자" 필드는 신규 작성시에만 필요하고 수정시에는 제외할 수 있습니다.</p>
+            </div>
+
+            <!-- Copy from Create Form Option -->
+            {% if create_config %}
+            <div class="mb-8">
+                <button onclick="wizardStep4.copyFromCreate()"
+                    class="px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 font-medium text-sm transition-colors">
+                    신규 작성 폼과 동일하게 설정
+                </button>
+            </div>
+            {% endif %}
+
+            <div class="space-y-6 mb-8" id="formSections">
+                <!-- Default section will be created by JS -->
+            </div>
+
+            <!-- Add Section Button -->
+            <button onclick="wizardStep4.addSection()"
+                class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2 mb-8">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                섹션 추가
+            </button>
+
+            <!-- Form Field Reference -->
+            <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 space-y-2">
+                <p class="font-semibold">입력 필드 타입:</p>
+                <ul class="text-xs grid grid-cols-2 gap-2">
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">text</span> - 한 줄 입력</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">textarea</span> - 여러 줄 입력</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">number</span> - 숫자</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">date</span> - 날짜</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">select</span> - 선택 드롭다운</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">checkbox</span> - 체크박스</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between gap-4">
+            <a href="/boards/new/step3/{{ board.id }}"
+                class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
+                이전 단계
+            </a>
+            <button onclick="wizardStep4.submit()"
+                class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
+                다음 단계 (완료)
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const wizardStep4 = {
+    sectionCount: 0,
+    fieldCount: {},
+
+    addSection() {
+        this.sectionCount++;
+        const container = document.getElementById('formSections');
+
+        const section = document.createElement('div');
+        section.className = 'bg-gray-50 rounded-lg p-6 space-y-4 border border-gray-200';
+        section.dataset.sectionIndex = this.sectionCount;
+
+        section.innerHTML = `
+            <div class="flex justify-between items-center">
+                <div class="flex-1">
+                    <label class="block text-gray-700 font-medium text-sm mb-2">섹션 제목 (선택)</label>
+                    <input type="text" class="section-title w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        placeholder="예: 기본 정보, 추가 정보">
+                </div>
+                <button onclick="wizardStep4.removeSection(${this.sectionCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm mt-6">
+                    섹션 삭제
+                </button>
+            </div>
+
+            <div class="space-y-3" data-section-fields="${this.sectionCount}">
+                <!-- Fields will be added here -->
+            </div>
+
+            <button onclick="wizardStep4.addField(${this.sectionCount})"
+                class="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                필드 추가
+            </button>
+        `;
+
+        container.appendChild(section);
+        this.fieldCount[this.sectionCount] = 0;
+    },
+
+    addField(sectionIndex) {
+        this.fieldCount[sectionIndex]++;
+        const fieldsContainer = document.querySelector(`[data-section-fields="${sectionIndex}"]`);
+
+        const field = document.createElement('div');
+        field.className = 'bg-white p-4 rounded-lg border border-gray-200 space-y-3';
+        field.dataset.fieldIndex = this.fieldCount[sectionIndex];
+
+        field.innerHTML = `
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">필드명</label>
+                    <input type="text" class="field-name w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" readonly>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">라벨</label>
+                    <input type="text" class="field-label w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        placeholder="예: 제목">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">입력 타입</label>
+                    <select class="field-type w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        <option value="text">text</option>
+                        <option value="textarea">textarea</option>
+                        <option value="number">number</option>
+                        <option value="date">date</option>
+                        <option value="select">select</option>
+                        <option value="checkbox">checkbox</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="field-required w-4 h-4 text-indigo-600 rounded" checked>
+                        <span class="text-gray-700 text-sm">필수 입력</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">자수 제한</label>
+                    <input type="number" class="field-rows w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        placeholder="예: 3 (textarea용)">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium text-xs mb-1">도움말 텍스트</label>
+                <input type="text" class="field-help w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    placeholder="예: 기록물의 제목을 입력하세요">
+            </div>
+
+            <button onclick="wizardStep4.removeField(this)" class="text-red-600 hover:text-red-700 font-medium text-xs">
+                필드 삭제
+            </button>
+        `;
+
+        fieldsContainer.appendChild(field);
+    },
+
+    removeField(button) {
+        button.closest('.bg-white').remove();
+    },
+
+    removeSection(sectionIndex) {
+        document.querySelector(`[data-section-index="${sectionIndex}"]`).remove();
+    },
+
+    copyFromCreate() {
+        // Clear existing sections
+        document.getElementById('formSections').innerHTML = '';
+        this.sectionCount = 0;
+        this.fieldCount = {};
+
+        // Copy from create_config
+        const createConfig = {{ create_config|tojson if create_config else 'null' }};
+        if (createConfig && createConfig.sections) {
+            createConfig.sections.forEach(section => {
+                this.addSection();
+                const sectionEl = document.querySelector(`[data-section-index="${this.sectionCount}"]`);
+                sectionEl.querySelector('.section-title').value = section.title || '';
+
+                section.fields.forEach(field => {
+                    this.addField(this.sectionCount);
+                    const fieldEl = sectionEl.querySelector('[data-field-index]:last-of-type');
+                    fieldEl.querySelector('.field-name').value = field.name;
+                    fieldEl.querySelector('.field-label').value = field.label;
+                    fieldEl.querySelector('.field-type').value = field.input_type;
+                    fieldEl.querySelector('.field-required').checked = field.required;
+                    if (field.help_text) fieldEl.querySelector('.field-help').value = field.help_text;
+                    if (field.rows) fieldEl.querySelector('.field-rows').value = field.rows;
+                });
+            });
+        }
+    },
+
+    getFormData() {
+        const sections = [];
+
+        document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
+            const title = sectionEl.querySelector('.section-title').value.trim() || null;
+            const fields = [];
+
+            sectionEl.querySelectorAll('[data-field-index]').forEach(fieldEl => {
+                const name = fieldEl.querySelector('.field-name').value || fieldEl.querySelector('.field-label').value.toLowerCase();
+                const label = fieldEl.querySelector('.field-label').value.trim();
+                const inputType = fieldEl.querySelector('.field-type').value;
+                const required = fieldEl.querySelector('.field-required').checked;
+                const helpText = fieldEl.querySelector('.field-help').value.trim() || null;
+                const rows = fieldEl.querySelector('.field-rows').value;
+
+                fields.push({
+                    name,
+                    label,
+                    input_type: inputType,
+                    required,
+                    help_text: helpText,
+                    rows: rows ? parseInt(rows) : null
+                });
+            });
+
+            sections.push({ title, fields });
+        });
+
+        return {
+            edit_config: {
+                sections: sections.length > 0 ? sections : [{
+                    title: null,
+                    fields: []
+                }]
+            }
+        };
+    },
+
+    async submit() {
+        try {
+            const formData = this.getFormData();
+
+            const response = await fetch('/boards/new/step4/{{ board.id }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert('오류: ' + data.detail);
+                return;
+            }
+
+            window.location.href = data.redirect;
+        } catch (error) {
+            alert('오류: ' + error.message);
+        }
+    }
+};
+
+// Initialize with one section
+document.addEventListener('DOMContentLoaded', () => {
+    wizardStep4.addSection();
+    // Add fields for each column
+    {% for column in columns %}
+    wizardStep4.addField(1);
+    const lastField = document.querySelector('[data-field-index]');
+    if (lastField) {
+        lastField.querySelector('.field-name').value = '{{ column.name }}';
+        lastField.querySelector('.field-label').value = '{{ column.label }}';
+    }
+    {% endfor %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}완료 - Auto-Board{% endblock %}
+
+{% block content %}
+{% include 'common/nav.html' %}
+
+<div class="p-8 max-w-4xl mx-auto w-full flex items-center justify-center min-h-[80vh]">
+    <div class="text-center space-y-8 w-full">
+        <!-- Progress Indicator -->
+        <div class="flex items-center justify-between mb-12">
+            <div class="flex-1">
+                <div class="flex justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">단계 5/5: 완료</span>
+                    <span class="text-sm text-gray-500">100%</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full w-full bg-indigo-500 rounded-full transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Icon -->
+        <div class="flex justify-center">
+            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
+                <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div class="space-y-2">
+            <h1 class="text-4xl font-bold text-[#1a1a2e]">축하합니다! 🎉</h1>
+            <p class="text-xl text-gray-600">
+                <span class="font-semibold">{{ board.name }}</span> 기록물이 성공적으로 생성되었습니다!
+            </p>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-left space-y-4">
+            <h2 class="text-lg font-bold text-[#1a1a2e] mb-6">생성된 기록물 정보</h2>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold mb-1">기록물 이름</p>
+                    <p class="text-lg text-[#1a1a2e] font-semibold">{{ board.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold mb-1">ID</p>
+                    <p class="text-lg text-[#1a1a2e] font-semibold">#{{ board.id }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold mb-1">데이터 테이블</p>
+                    <p class="text-lg font-mono text-gray-700">{{ board.physical_table_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 font-semibold mb-1">생성 일시</p>
+                    <p class="text-lg text-gray-700">{{ board.created_at.strftime('%Y-%m-%d %H:%M:%S') if board.created_at else 'N/A' }}</p>
+                </div>
+            </div>
+
+            {% if board.note %}
+            <div class="pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-500 font-semibold mb-1">설명</p>
+                <p class="text-gray-700">{{ board.note }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Next Steps -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left space-y-4">
+            <h3 class="text-lg font-bold text-blue-900">다음 단계</h3>
+            <ul class="space-y-3 text-blue-700">
+                <li class="flex items-start gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">1</span>
+                    <span>생성된 기록물에서 새로운 기록을 작성할 수 있습니다.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">2</span>
+                    <span>필요에 따라 나중에 기록물의 구조를 수정할 수 있습니다 (설정 메뉴).</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">3</span>
+                    <span>더 많은 기록물을 생성하려면 "새 기록물 생성" 버튼을 클릭하세요.</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-center gap-4 flex-wrap">
+            <a href="/boards/{{ board.id }}"
+                class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
+                기록물 열기
+            </a>
+            <a href="/boards"
+                class="px-8 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
+                대시보드
+            </a>
+            <a href="/boards/new/step1"
+                class="px-8 py-3 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 font-bold transition-colors border border-green-200">
+                새 기록물 생성
+            </a>
+        </div>
+
+        <!-- Info Box -->
+        <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 text-left space-y-2">
+            <p class="font-semibold text-gray-700">💡 팁:</p>
+            <ul class="text-xs space-y-1 list-disc list-inside">
+                <li>기록물의 설정은 생성 후에도 수정할 수 있습니다.</li>
+                <li>항목의 순서나 표시 방식을 나중에 변경할 수 있습니다.</li>
+                <li>더 많은 기능은 설정에서 찾을 수 있습니다.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Step 1: 테이블 생성 - Auto-Board{% endblock %}
+
+{% block content %}
+{% include 'common/nav.html' %}
+
+<div class="p-8 max-w-4xl mx-auto w-full">
+    <div class="space-y-8">
+        <!-- Progress Indicator -->
+        <div class="flex items-center justify-between">
+            <div class="flex-1">
+                <div class="flex justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">단계 1/5: 테이블 생성</span>
+                    <span class="text-sm text-gray-500">20%</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full w-1/5 bg-indigo-500 rounded-full transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Board Info Section -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">기본 정보</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">
+                        기록물 이름 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="boardName"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                        placeholder="예: 일기, 키보드 수집, 혈압 기록">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">
+                        카테고리 <span class="text-gray-400 text-sm">(선택)</span>
+                    </label>
+                    <input type="text" id="boardCategory"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                        placeholder="예: 개인, 작업, 취미">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-gray-700 font-medium mb-2">
+                        설명 <span class="text-gray-400 text-sm">(선택)</span>
+                    </label>
+                    <textarea id="boardNote"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-vertical"
+                        rows="3" placeholder="이 기록물에 대한 설명을 입력하세요"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columns Definition Section -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold text-[#1a1a2e]">항목(컬럼) 정의</h2>
+                <button onclick="wizardStep1.addColumn()"
+                    class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    항목 추가
+                </button>
+            </div>
+
+            <div class="overflow-x-auto mb-6">
+                <table class="w-full text-sm" id="columnsTable">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700 w-12">번호</th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">라벨 (한글) <span class="text-red-500">*</span></th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">이름 (영문) <span class="text-red-500">*</span></th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">데이터 타입</th>
+                            <th class="py-3 px-4 text-center font-semibold text-gray-700 w-20">필수</th>
+                            <th class="py-3 px-4 text-center font-semibold text-gray-700 w-20">동작</th>
+                        </tr>
+                    </thead>
+                    <tbody id="columnsBody" class="divide-y divide-gray-100">
+                        <!-- Rows will be added dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg mb-6 text-sm text-gray-600">
+                <p class="font-semibold mb-2">데이터 타입 설명:</p>
+                <ul class="space-y-1 text-xs">
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">ymd</span> - 날짜 (YYYY-MM-DD)</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">datetime</span> - 날짜/시간</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">string</span> - 문자 (한 줄)</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">text</span> - 긴 텍스트</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">integer</span> - 정수</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">float</span> - 소수</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">boolean</span> - 참/거짓</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between gap-4">
+            <a href="/boards" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
+                취소
+            </a>
+            <button onclick="wizardStep1.submit()"
+                class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
+                다음 단계 (목록 설정)
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const wizardStep1 = {
+    columnCount: 0,
+
+    addColumn() {
+        this.columnCount++;
+        const tbody = document.getElementById('columnsBody');
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.dataset.columnIndex = this.columnCount;
+        row.innerHTML = `
+            <td class="py-3 px-4 text-gray-500">${this.columnCount}</td>
+            <td class="py-3 px-4">
+                <input type="text" class="col-label w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 제목">
+            </td>
+            <td class="py-3 px-4">
+                <input type="text" class="col-name w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: title">
+            </td>
+            <td class="py-3 px-4">
+                <select class="col-type w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                    <option value="string">string</option>
+                    <option value="text">text</option>
+                    <option value="integer">integer</option>
+                    <option value="float">float</option>
+                    <option value="boolean">boolean</option>
+                    <option value="ymd">ymd</option>
+                    <option value="datetime">datetime</option>
+                </select>
+            </td>
+            <td class="py-3 px-4 text-center">
+                <input type="checkbox" class="col-required w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
+            </td>
+            <td class="py-3 px-4 text-center">
+                <button onclick="wizardStep1.removeColumn(${this.columnCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm">
+                    삭제
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    },
+
+    removeColumn(index) {
+        const row = document.querySelector(`tr[data-column-index="${index}"]`);
+        if (row) {
+            row.remove();
+        }
+    },
+
+    getFormData() {
+        const boardName = document.getElementById('boardName').value.trim();
+        const boardNote = document.getElementById('boardNote').value.trim();
+
+        if (!boardName) {
+            alert('기록물 이름을 입력하세요.');
+            return null;
+        }
+
+        const columns = [];
+        document.querySelectorAll('#columnsBody tr').forEach(row => {
+            const label = row.querySelector('.col-label').value.trim();
+            const name = row.querySelector('.col-name').value.trim();
+            const dataType = row.querySelector('.col-type').value;
+            const required = row.querySelector('.col-required').checked;
+
+            if (!label || !name) {
+                throw new Error('모든 항목의 라벨과 이름을 입력하세요.');
+            }
+
+            columns.push({
+                label,
+                name,
+                data_type: dataType,
+                required
+            });
+        });
+
+        if (columns.length === 0) {
+            alert('최소 1개 이상의 항목을 추가하세요.');
+            return null;
+        }
+
+        return {
+            board_name: boardName,
+            board_note: boardNote,
+            columns
+        };
+    },
+
+    async submit() {
+        try {
+            const formData = this.getFormData();
+            if (!formData) return;
+
+            const response = await fetch('/boards/new/step1', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert('오류: ' + data.detail);
+                return;
+            }
+
+            window.location.href = data.redirect;
+        } catch (error) {
+            alert('오류: ' + error.message);
+        }
+    }
+};
+
+// Add first column on load
+document.addEventListener('DOMContentLoaded', () => {
+    wizardStep1.addColumn();
+});
+</script>
+{% endblock %}

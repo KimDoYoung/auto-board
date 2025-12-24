@@ -106,6 +106,7 @@ Use dependency injection pattern via `app/core/deps.py:get_db_connection()`:
 
 - Returns SQLite connection with `row_factory = sqlite3.Row` for dict-like access
 - Properly yields and closes connections
+- 비동기 함수를 유지하되, 스레드 안전하게 처리하는 방식을 선택할 것.
 
 ### Authentication
 
