@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko" class="bg-gray-50 min-h-screen">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Grid & List View 설정 생성기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    .drag-over { border-color: #3b82f6; background-color: rgba(59,130,246,0.1); }
+  </style>
+</head>
+<body class="antialiased">
+
+<div x-data="configGenerator()" class="container mx-auto max-w-6xl px-4 py-10">
+
+  <h1 class="text-3xl font-bold text-gray-800 mb-2">뷰 설정 JSON 생성기</h1>
+  <p class="text-gray-600 mb-8">컬럼 순서 드래그, 표시 여부, 포맷 등을 설정한 뒤 JSON을 복사하세요</p>
+
+  <!-- 탭 -->
+  <div class="flex border-b mb-6">
+    <button 
+      @click="currentTab = 'columns'" 
+      :class="currentTab === 'columns' ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' : 'text-gray-600'"
+      class="px-6 py-3 transition">
+      컬럼 설정
+    </button>
+    <button 
+      @click="currentTab = 'general'" 
+      :class="currentTab === 'general' ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' : 'text-gray-600'"
+      class="px-6 py-3 transition">
+      기본 설정
+    </button>
+    <button 
+      @click="currentTab = 'search'" 
+      :class="currentTab === 'search' ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' : 'text-gray-600'"
+      class="px-6 py-3 transition">
+      검색 설정
+    </button>
+  </div>
+
+  <!-- 컬럼 설정 탭 -->
+  <div x-show="currentTab === 'columns'" x-transition>
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">표시할 컬럼 (드래그로 순서 변경)</h2>
+      
+      <div class="space-y-3 mb-6">
+        <template x-for="(col, index) in displayColumns" :key="col.name">
+          <div 
+            class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition group"
+            draggable="true"
+            @dragstart="dragStart($event, index)"
+            @dragover.prevent
+            @dragenter.prevent="$event.target.classList.add('drag-over')"
+            @dragleave="$event.target.classList.remove('drag-over')"
+            @drop="drop($event, index)"
+            @dragend="dragEnd()"
+          >
+            <input type="checkbox" x-model="col.visible" class="w-5 h-5 rounded text-blue-600">
+            
+            <div class="flex-1 grid grid-cols-4 gap-4 items-center">
+              <div>
+                <input x-model="col.name" class="w-full px-3 py-1.5 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="필드명">
+              </div>
+              <div>
+                <input x-model="col.label" class="w-full px-3 py-1.5 border rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="표시명">
+              </div>
+              <div class="flex gap-2">
+                <select x-model="col.align" class="px-2 py-1.5 border rounded bg-white">
+                  <option value="left">좌</option>
+                  <option value="center">중앙</option>
+                  <option value="right">우</option>
+                </select>
+                <input x-model="col.width" placeholder="120px / auto" class="w-24 px-3 py-1.5 border rounded">
+              </div>
+              <div class="flex gap-2">
+                <select x-model="col.format" class="px-2 py-1.5 border rounded bg-white">
+                  <option value="">없음</option>
+                  <option value="stars">별점</option>
+                  <option value="currency">통화</option>
+                  <option value="number">숫자</option>
+                  <option value="date">날짜</option>
+                </select>
+                <label class="flex items-center gap-1.5">
+                  <input type="checkbox" x-model="col.sortable" class="w-4 h-4">
+                  <span class="text-sm">정렬</span>
+                </label>
+              </div>
+            </div>
+
+            <button @click="removeColumn(index)" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition">
+              삭제
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <button @click="addColumn()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        + 컬럼 추가
+      </button>
+    </div>
+  </div>
+
+  <!-- 기본 설정 탭 -->
+  <div x-show="currentTab === 'general'" x-transition>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">뷰 모드</h3>
+        <div class="flex gap-6">
+          <label class="flex items-center gap-2">
+            <input type="radio" x-model="view_mode" value="table"> 테이블
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" x-model="view_mode" value="card"> 카드
+          </label>
+        </div>
+      </div>
+
+      <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">기본 정렬</h3>
+        <div class="flex gap-4 items-center flex-wrap">
+          <select x-model="default_sort.column" class="px-3 py-2 border rounded">
+            <template x-for="col in displayColumns" x-if="col.visible">
+              <option :value="col.name" x-text="col.label || col.name"></option>
+            </template>
+          </select>
+          <select x-model="default_sort.order" class="px-3 py-2 border rounded">
+            <option value="asc">오름차순</option>
+            <option value="desc">내림차순</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">페이징</h3>
+        <div class="space-y-3">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="pagination.enabled">
+            페이징 사용
+          </label>
+
+          <div x-show="pagination.enabled" class="pl-6 space-y-3">
+            <div>
+              <label class="block text-sm mb-1">페이지당 건수 기본값</label>
+              <select x-model="pagination.page_size" class="px-3 py-2 border rounded w-32">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" x-model="pagination.next_style">
+              다음/이전 스타일 (페이지 번호 대신)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">액션 버튼</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="actions.show_detail"> 상세보기
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="actions.show_edit"> 수정
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" x-model="actions.show_delete"> 삭제
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 검색 설정 탭 -->
+  <div x-show="currentTab === 'search'" x-transition>
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-xl font-semibold mb-4">검색 설정</h2>
+
+      <div class="space-y-6">
+        <div>
+          <label class="flex items-center gap-2 font-medium">
+            <input type="checkbox" x-model="search.enabled">
+            검색 기능 사용
+          </label>
+        </div>
+
+        <div x-show="search.enabled">
+          <label class="block font-medium mb-2">검색 모드</label>
+          <select x-model="search.mode" class="px-4 py-2 border rounded w-full max-w-xs">
+            <option value="simple">간단 검색 (전체 텍스트)</option>
+            <option value="advanced">상세 검색 (필드별)</option>
+          </select>
+
+          <div x-show="search.mode === 'advanced'" class="mt-6">
+            <h4 class="font-medium mb-3">상세 검색 필드</h4>
+            
+            <div class="space-y-4">
+              <template x-for="(field, idx) in search.fields" :key="idx">
+                <div class="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
+                  <div class="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <input x-model="field.name" placeholder="필드명" class="px-3 py-2 border rounded">
+                    <input x-model="field.label" placeholder="화면 표시명" class="px-3 py-2 border rounded">
+                    <select x-model="field.search_type" class="px-3 py-2 border rounded">
+                      <option value="text">텍스트</option>
+                      <option value="exact">정확 일치</option>
+                      <option value="date_range">날짜 범위</option>
+                      <option value="range">숫자 범위</option>
+                    </select>
+
+                    <template x-if="field.search_type === 'range'">
+                      <div class="flex gap-2 items-center">
+                        <input x-model="field.min" type="number" placeholder="최소" class="w-24 px-3 py-2 border rounded">
+                        <span>~</span>
+                        <input x-model="field.max" type="number" placeholder="최대" class="w-24 px-3 py-2 border rounded">
+                      </div>
+                    </template>
+                  </div>
+                  <button @click="removeSearchField(idx)" class="text-red-600 hover:text-red-800 mt-1.5">삭제</button>
+                </div>
+              </template>
+
+              <button @click="addSearchField()" class="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                + 검색 필드 추가
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 영역 -->
+  <div class="mt-10 bg-gray-900 text-green-400 font-mono p-6 rounded-xl shadow-2xl relative">
+    <div class="absolute top-3 right-3">
+      <button 
+        @click="copyJson()" 
+        class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm transition">
+        JSON 복사
+      </button>
+    </div>
+    
+    <pre x-text="generatedJson" class="overflow-auto max-h-[60vh] text-sm leading-relaxed"></pre>
+  </div>
+
+</div>
+
+<script>
+function configGenerator() {
+  return {
+    currentTab: 'columns',
+
+    displayColumns: [
+      { name: 'ymd', label: '날짜', width: '120px', align: 'center', sortable: true, visible: true },
+      { name: 'title', label: '제목', width: 'auto', align: 'left', sortable: true, visible: true },
+      { name: 'rating', label: '평점', width: '80px', align: 'center', sortable: true, format: 'stars', visible: true },
+      { name: 'price', label: '가격', width: '120px', align: 'right', sortable: true, format: 'currency', visible: true },
+    ],
+
+    view_mode: 'table',
+    paging_type: 'page',
+    pagination: {
+      enabled: true,
+      next_style: false,
+      page_size: 20,
+      page_size_options: [10, 20, 50, 100]
+    },
+    default_sort: {
+      column: 'ymd',
+      order: 'desc'
+    },
+    actions: {
+      show_edit: true,
+      show_delete: true,
+      show_detail: true
+    },
+    search: {
+      enabled: true,
+      mode: 'advanced',
+      fields: [
+        { name: 'title', label: '제목', search_type: 'text' },
+        { name: 'ymd', label: '날짜', search_type: 'date_range' },
+        { name: 'rating', label: '평점', search_type: 'range', min: 1, max: 10 }
+      ]
+    },
+
+    // 드래그 앤 드롭 관련
+    draggedIndex: null,
+
+    dragStart(e, index) {
+      this.draggedIndex = index;
+      e.dataTransfer.effectAllowed = 'move';
+    },
+
+    dragEnd() {
+      this.draggedIndex = null;
+    },
+
+    drop(e, targetIndex) {
+      e.preventDefault();
+      e.target.classList.remove('drag-over');
+
+      if (this.draggedIndex === null || this.draggedIndex === targetIndex) return;
+
+      const [moved] = this.displayColumns.splice(this.draggedIndex, 1);
+      this.displayColumns.splice(targetIndex, 0, moved);
+
+      this.draggedIndex = null;
+    },
+
+    addColumn() {
+      this.displayColumns.push({
+        name: 'new_column',
+        label: '새 컬럼',
+        width: '120px',
+        align: 'left',
+        sortable: false,
+        format: '',
+        visible: true
+      });
+    },
+
+    removeColumn(index) {
+      if (confirm('이 컬럼을 삭제하시겠습니까?')) {
+        this.displayColumns.splice(index, 1);
+      }
+    },
+
+    addSearchField() {
+      this.search.fields.push({
+        name: '',
+        label: '',
+        search_type: 'text'
+      });
+    },
+
+    removeSearchField(idx) {
+      if (confirm('삭제하시겠습니까?')) {
+        this.search.fields.splice(idx, 1);
+      }
+    },
+
+    get generatedJson() {
+      const visibleColumns = this.displayColumns
+        .filter(c => c.visible)
+        .map(c => {
+          const col = { ...c };
+          delete col.visible;
+          if (!col.format) delete col.format;
+          return col;
+        });
+
+      const config = {
+        display_columns: visibleColumns,
+        view_mode: this.view_mode,
+        paging_type: this.paging_type,
+        pagination: this.pagination,
+        default_sort: this.default_sort,
+        actions: this.actions,
+        search: this.search.enabled ? this.search : { enabled: false }
+      };
+
+      if (this.search.mode === 'simple') {
+        config.search = {
+          enabled: true,
+          mode: 'simple',
+          columns: ['title', 'content'] // 기본값 예시
+        };
+      }
+
+      return JSON.stringify(config, null, 2);
+    },
+
+    async copyJson() {
+      try {
+        await navigator.clipboard.writeText(this.generatedJson);
+        alert('JSON이 클립보드에 복사되었습니다!');
+      } catch (err) {
+        alert('복사 실패\n\n' + this.generatedJson);
+      }
+    }
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+<div x-data="configForm()" class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
+        <h2 class="text-xl font-bold border-b pb-2">Configuration Editor</h2>
+
+        <section class="space-y-4">
+            <h3 class="font-semibold text-blue-600">Basic Settings</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm">View Mode</label>
+                    <select x-model="config.view_mode" class="w-full border rounded p-2 text-sm">
+                        <option value="table">Table</option>
+                        <option value="card">Card</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm">Paging Type</label>
+                    <select x-model="config.paging_type" class="w-full border rounded p-2 text-sm">
+                        <option value="page">Page</option>
+                        <option value="next">Next</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-semibold text-blue-600">Display Columns</h3>
+                <button @click="addColumn" class="text-xs bg-blue-500 text-white px-2 py-1 rounded">+ Add Column</button>
+            </div>
+            <template x-for="(col, index) in config.display_columns" :key="index">
+                <div class="p-3 border rounded-md bg-gray-50 relative space-y-2">
+                    <button @click="removeColumn(index)" class="absolute top-1 right-2 text-red-500 text-xl">&times;</button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" x-model="col.name" placeholder="Name" class="border p-1 text-sm rounded">
+                        <input type="text" x-model="col.label" placeholder="Label" class="border p-1 text-sm rounded">
+                        <input type="text" x-model="col.width" placeholder="Width (e.g. 120px)" class="border p-1 text-sm rounded">
+                        <select x-model="col.align" class="border p-1 text-sm rounded">
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs mt-1">
+                        <label><input type="checkbox" x-model="col.sortable"> Sortable</label>
+                        <select x-model="col.format" class="border p-1 rounded">
+                            <option value="">No Format</option>
+                            <option value="stars">Stars</option>
+                            <option value="currency">Currency</option>
+                        </select>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <section class="grid grid-cols-2 gap-4 border-t pt-4">
+            <div>
+                <h3 class="font-semibold text-blue-600 mb-2">Pagination</h3>
+                <label class="block text-xs"><input type="checkbox" x-model="config.pagination.enabled"> Enabled</label>
+                <input type="number" x-model.number="config.pagination.page_size" class="w-full border p-1 mt-1 text-sm" placeholder="Page Size">
+            </div>
+            <div>
+                <h3 class="font-semibold text-blue-600 mb-2">Default Sort</h3>
+                <input type="text" x-model="config.default_sort.column" class="w-full border p-1 text-sm mb-1" placeholder="Column Name">
+                <select x-model="config.default_sort.order" class="w-full border p-1 text-sm">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+        </section>
+
+        <button @click="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition">
+            Generate JSON
+        </button>
+    </div>
+
+    <div class="bg-slate-900 p-6 rounded-lg shadow-md h-fit sticky top-8">
+        <h2 class="text-xl font-bold text-white border-b border-slate-700 pb-2 mb-4">JSON Output</h2>
+        <pre class="text-green-400 text-sm overflow-x-auto" x-text="JSON.stringify(config, null, 2)"></pre>
+    </div>
+</div>
+
+<script>
+    function configForm() {
+        return {
+            config: {
+                display_columns: [
+                    { name: "ymd", label: "날짜", width: "120px", align: "center", sortable: true },
+                    { name: "title", label: "제목", width: "auto", align: "left", sortable: true },
+                    { name: "rating", label: "평점", width: "80px", align: "center", sortable: true, format: "stars" },
+                    { name: "price", label: "가격", width: "120px", align: "right", sortable: true, format: "currency" }
+                ],
+                view_mode: "table",
+                paging_type: "page",
+                pagination: {
+                    next_style: false,
+                    enabled: true,
+                    page_size: 20,
+                    page_size_options: [10, 20, 50, 100]
+                },
+                default_sort: {
+                    column: "ymd",
+                    order: "desc"
+                },
+                actions: {
+                    show_edit: true,
+                    show_delete: true,
+                    show_detail: true
+                },
+                search: {
+                    enabled: true,
+                    mode: "simple",
+                    fields: [
+                        { name: "title", label: "제목", search_type: "text" },
+                        { name: "ymd", label: "날짜", search_type: "date_range" },
+                        { name: "rating", label: "평점", search_type: "range", min: 1, max: 10 }
+                    ]
+                }
+            },
+            addColumn() {
+                this.config.display_columns.push({
+                    name: "", label: "", width: "auto", align: "left", sortable: false
+                });
+            },
+            removeColumn(index) {
+                this.config.display_columns.splice(index, 1);
+            },
+            submit() {
+                const finalJson = JSON.stringify(this.config, null, 2);
+                console.log(finalJson);
+                alert("JSON이 생성되었습니다. 콘솔창을 확인하세요!");
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -15,9 +15,10 @@
   - data_type : dropdown 형식
   - required 필수여부
   - default value
-  - string인 경우 length default는 100으로
+  - string인 경우 length(글자수) default는 100으로
   - integer인 경우 min, max
   - text인 경우 content_type (html:워드형식, text: 단순문자 )
+❓ min, max, default를 모두 step3,4에서 하는게 나을려나?
 
 ```json
 {

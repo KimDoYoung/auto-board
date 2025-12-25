@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON 생성기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-6">
+
+  <div x-data="jsonBuilder()" class="bg-white shadow-xl rounded-xl p-6 w-full max-w-3xl space-y-6">
+    <h1 class="text-2xl font-bold text-gray-800">Display 설정 JSON 생성</h1>
+
+    <!-- View Mode -->
+    <div>
+      <label class="font-semibold block mb-1">View Mode</label>
+      <select x-model="config.view_mode" class="border rounded-md w-full p-2">
+        <option value="table">table</option>
+        <option value="card">card</option>
+      </select>
+    </div>
+
+    <!-- Paging Type -->
+    <div>
+      <label class="font-semibold block mb-1">Paging Type</label>
+      <select x-model="config.paging_type" class="border rounded-md w-full p-2">
+        <option value="page">page</option>
+        <option value="next">next</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+
+    <!-- Pagination -->
+    <div class="border rounded-lg p-4">
+      <h2 class="font-semibold mb-2 text-gray-700">Pagination 설정</h2>
+      <label class="flex items-center space-x-2 mb-2">
+        <input type="checkbox" x-model="config.pagination.enabled" class="form-checkbox">
+        <span>Enabled</span>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium">Page Size</label>
+          <input type="number" x-model.number="config.pagination.page_size" class="border rounded w-full p-1">
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Next Style</label>
+          <input type="checkbox" x-model="config.pagination.next_style">
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="border rounded-lg p-4">
+      <h2 class="font-semibold mb-2 text-gray-700">Actions</h2>
+      <div class="grid grid-cols-3 gap-3">
+        <label class="flex items-center space-x-2">
+          <input type="checkbox" x-model="config.actions.show_edit">
+          <span>Edit</span>
+        </label>
+        <label class="flex items-center space-x-2">
+          <input type="checkbox" x-model="config.actions.show_delete">
+          <span>Delete</span>
+        </label>
+        <label class="flex items-center space-x-2">
+          <input type="checkbox" x-model="config.actions.show_detail">
+          <span>Detail</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Display Columns -->
+    <div class="border rounded-lg p-4">
+      <h2 class="font-semibold mb-2 text-gray-700">Display Columns</h2>
+      <template x-for="(col, i) in config.display_columns" :key="i">
+        <div class="border p-2 mb-2 rounded-md bg-gray-50 space-y-1">
+          <input type="text" x-model="col.name" placeholder="name" class="border rounded p-1 w-full">
+          <input type="text" x-model="col.label" placeholder="label" class="border rounded p-1 w-full">
+          <input type="text" x-model="col.width" placeholder="width" class="border rounded p-1 w-full">
+          <select x-model="col.align" class="border rounded p-1 w-full">
+            <option value="left">left</option>
+            <option value="center">center</option>
+            <option value="right">right</option>
+          </select>
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" x-model="col.sortable">
+            <span>Sortable</span>
+          </label>
+          <input type="text" x-model="col.format" placeholder="format (optional)" class="border rounded p-1 w-full">
+          <button @click="config.display_columns.splice(i, 1)" class="text-red-500 text-sm">삭제</button>
+        </div>
+      </template>
+      <button @click="addColumn" class="bg-blue-500 text-white px-3 py-1 rounded-md">+ 컬럼 추가</button>
+    </div>
+
+    <!-- Submit -->
+    <div class="text-center">
+      <button @click="submit" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md font-semibold">
+        JSON 생성하기
+      </button>
+    </div>
+
+    <!-- 출력 -->
+    <pre class="bg-gray-100 p-3 rounded text-sm overflow-x-auto" x-text="output"></pre>
+  </div>
+
+  <script>
+    function jsonBuilder() {
+      return {
+        output: '',
+        config: {
+          display_columns: [
+            { name: 'ymd', label: '날짜', width: '120px', align: 'center', sortable: true },
+            { name: 'title', label: '제목', width: 'auto', align: 'left', sortable: true },
+          ],
+          view_mode: 'table',
+          paging_type: 'page',
+          pagination: {
+            next_style: false,
+            enabled: true,
+            page_size: 20,
+            page_size_options: [10, 20, 50, 100]
+          },
+          default_sort: { column: 'ymd', order: 'desc' },
+          actions: {
+            show_edit: true,
+            show_delete: true,
+            show_detail: true
+          },
+          search: {
+            enabled: true,
+            mode: 'simple',
+            fields: []
+          }
+        },
+        addColumn() {
+          this.config.display_columns.push({
+            name: '',
+            label: '',
+            width: '',
+            align: 'left',
+            sortable: false,
+            format: ''
+          });
+        },
+        submit() {
+          this.output = JSON.stringify(this.config, null, 2);
+          console.log(this.output);
+          alert('JSON이 콘솔에 출력되었습니다.');
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>
