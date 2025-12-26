@@ -18,8 +18,9 @@
       "element_type": "date",
       "required": true,
       "default_value": "today",
-      "width": "200px",
-      "position": {"row": 1, "col": 1},
+      "order": 1,
+      "inline_group": "header",
+      "width": "30%",
       "help_text": "기록 날짜를 선택하세요"
     },
     {
@@ -31,8 +32,9 @@
       "length": 100,
       "required": true,
       "placeholder": "제목을 입력하세요",
-      "position": {"row": 1, "col": 2},
-      "colspan": 2,
+      "order": 2,
+      "inline_group": "header",
+      "width": "70%",
       "autofocus": true
     },
     {
@@ -46,7 +48,8 @@
         {"value": "personal", "label": "개인"},
         {"value": "study", "label": "공부"}
       ],
-      "position": {"row": 2, "col": 1},
+      "order": 3,
+      "width": "100%",
       "on_change": "updateRelatedFields"
     },
     {
@@ -67,7 +70,7 @@
           ]
         }
       },
-      "position": {"row": 3, "col": 1},
+      "order": 4,
       "full_width": true
     },
     {
@@ -80,7 +83,9 @@
       "max_value": 10,
       "step": 1,
       "default_value": 5,
-      "position": {"row": 4, "col": 1},
+      "order": 5,
+      "inline_group": "meta",
+      "width": "50%",
       "help_text": "1-10점 사이로 평가하세요"
     },
     {
@@ -93,7 +98,9 @@
       "max_value": 1000000.0,
       "step": 0.01,
       "placeholder": "0.00",
-      "position": {"row": 4, "col": 2}
+      "order": 6,
+      "inline_group": "meta",
+      "width": "50%"
     },
     {
       "name": "is_public",
@@ -101,7 +108,9 @@
       "data_type": "boolean",
       "element": "checkbox",
       "default_value": false,
-      "position": {"row": 5, "col": 1},
+      "order": 7,
+      "inline_group": "options",
+      "width": "50%",
       "help_text": "다른 사람에게 공개합니다"
     },
     {
@@ -115,7 +124,9 @@
         {"value": "urgent", "label": "긴급"},
         {"value": "review", "label": "검토필요"}
       ],
-      "position": {"row": 5, "col": 2}
+      "order": 8,
+      "inline_group": "options",
+      "width": "50%"
     },
     {
       "name": "attachment",
@@ -125,7 +136,7 @@
       "accept": ".pdf,.doc,.docx,image/*",
       "max_file_size": 10485760,
       "multiple_files": true,
-      "position": {"row": 6, "col": 1},
+      "order": 9,
       "full_width": true
     },
     {
@@ -137,8 +148,59 @@
       "required": true,
       "auto_generate": "timestamp",
       "readonly": true,
-      "position": {"row": 7, "col": 1}
+      "order": 10,
+      "width": "100%"
     }
   ]
 }
+
 ```
+
+## 주요 변경사항
+
+### 1. **position 제거** → **order + inline_group**
+
+- `position: {"row": 1, "col": 1}` → `order: 1, inline_group: "header"`
+- 더 직관적이고 유연한 배치
+
+### 2. **inline_group 그룹핑**
+
+- `"header"`: 날짜(30%) + 제목(70%) - 첫 줄
+- `"meta"`: 평점(50%) + 가격(50%) - 같은 줄
+- `"options"`: 공개여부(50%) + 태그(50%) - 같은 줄
+- 그룹이 없는 필드는 독립적으로 배치
+
+### 3. **width 방식 변경**
+
+- `"200px"` → `"30%"` (상대값으로 변경)
+- 반응형에 더 적합
+
+### 4. **colspan 제거**
+
+- `colspan: 2` → inline_group으로 더 명확하게 표현
+
+### 5. **full_width 명시**
+
+- 전체 너비를 차지하는 필드에 명시적 표시
+
+## 렌더링 결과 (시각화)
+
+```text
+
+┌─────────────────────────────────────┐
+│ [날짜 30%]  [제목 70%]              │  ← inline_group: "header"
+│                                     │
+│ [카테고리 100%]                     │  ← 독립
+│                                     │
+│ [내용 ────────────────────────]     │  ← full_width
+│ [     HTML Editor 영역        ]     │
+│ [                              ]     │
+│                                     │
+│ [평점 50%]     [가격 50%]           │  ← inline_group: "meta"
+│                                     │
+│ [공개여부 50%] [태그 50%]           │  ← inline_group: "options"
+│                                     │
+│ [첨부파일 ────────────────────]     │  ← full_width
+│                                     │
+│ [생성일시 100%]                     │  ← 독립
+└─────────────────────────────────────┘
