@@ -26,8 +26,8 @@ create table if not exists boards(
 create table if not exists meta_data(
     id integer primary key,
     board_id integer not null,
-    name text not null,
-    meta text not null,
+    name text not null, -- `table`,`columns`,`create_edit`,`view`,`list`
+    meta text not null, --json format
     schema text not null,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp

@@ -183,41 +183,44 @@ const wizardStep3 = {
     },
 
     getFormData() {
-        const sections = [];
+        const fields = [];
 
-        document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
-            const title = sectionEl.querySelector('.section-title').value.trim() || null;
-            const fields = [];
+        document.querySelectorAll('[data-field-index]').forEach(fieldEl => {
+            const name = fieldEl.querySelector('.field-name').value || fieldEl.querySelector('.field-label').value.toLowerCase();
+            const label = fieldEl.querySelector('.field-label').value.trim();
+            const inputType = fieldEl.querySelector('.field-type').value;
+            const required = fieldEl.querySelector('.field-required').checked;
+            const helpText = fieldEl.querySelector('.field-help').value.trim() || null;
+            const rows = fieldEl.querySelector('.field-rows').value;
 
-            sectionEl.querySelectorAll('[data-field-index]').forEach(fieldEl => {
-                const name = fieldEl.querySelector('.field-name').value || fieldEl.querySelector('.field-label').value.toLowerCase();
-                const label = fieldEl.querySelector('.field-label').value.trim();
-                const inputType = fieldEl.querySelector('.field-type').value;
-                const required = fieldEl.querySelector('.field-required').checked;
-                const helpText = fieldEl.querySelector('.field-help').value.trim() || null;
-                const rows = fieldEl.querySelector('.field-rows').value;
-
-                fields.push({
-                    name,
-                    label,
-                    input_type: inputType,
-                    required,
-                    help_text: helpText,
-                    rows: rows ? parseInt(rows) : null
-                });
+            fields.push({
+                name,
+                label,
+                element: this.mapInputTypeToElement(inputType),
+                element_type: inputType,
+                required,
+                help_text: helpText,
+                ...(rows && { rows: parseInt(rows) })
             });
-
-            sections.push({ title, fields });
         });
 
         return {
-            create_config: {
-                sections: sections.length > 0 ? sections : [{
-                    title: null,
-                    fields: []
-                }]
+            create_edit: {
+                fields
             }
         };
+    },
+
+    mapInputTypeToElement(inputType) {
+        const mapping = {
+            'text': 'input',
+            'textarea': 'textarea',
+            'number': 'input',
+            'date': 'input',
+            'select': 'select',
+            'checkbox': 'checkbox'
+        };
+        return mapping[inputType] || 'input';
     },
 
     async submit() {
@@ -250,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add fields for each column
     {% for column in columns %}
     wizardStep3.addField(1);
-    const lastField = document.querySelector('[data-field-index]');
+    const lastField = document.querySelector('[data-field-index]:last-of-type');
     if (lastField) {
         lastField.querySelector('.field-name').value = '{{ column.name }}';
         lastField.querySelector('.field-label').value = '{{ column.label }}';

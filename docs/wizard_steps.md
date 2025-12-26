@@ -35,6 +35,84 @@
 
 ## step3
 
-- create 즉 table_{id} 에 대한 create 화면을 어떻게 보여줄 지 UI를 통해서 정한 후 그 결과를 `create-json`으로 만든다.
-- 만들어진 json은 submit 되어서 `meta-data` table에 `create` 항목으로 저장된다.
+- create 즉 table_{id} 에 대한 create 화면을 어떻게 보여주면서 편집(사용자가 추가, 수정) 할 지 UI를 통해서 정한 후 그 결과를 `create_edit` json 으로 만든다.
+- 만들어진 json은 submit 되어서 `meta-data` table에 `create_edit` 항목으로 저장된다.
 
+## step4
+
+- view 즉 table_{id}를 어떻게 보여줄지를 나타내는 json을 만드는 UI를 만든다.
+- UI에서 `view.json`을 output으로 한다.
+
+## 결론
+
+- step1,2,3,4 는 json 파일을 만드는 UI를 제공해야한다.
+
+1. step1 -> submit -> board.md와 columns.md의 json을 만들어서 server로 보낸다.
+2. server에서는 create table table_{id} 을 한다. josn을 meta-data table에 name을 `table`, `columns` 2개의 레코드로 넣는다.
+3. step2 -> submit -> 만들어진 table_{id}을 보여줄 수 있는 meta json을 만들어서 server로 보낸다.
+4. server에서는 json을 name을 `list`로 레코드로 넣는다.
+5. step3 -> submit -> 만들어진 table_{id}를 어떻게 추가, 수정할 수 있는 html을 만드는지 지정하는 json을 만들어서 server에 보낸다.
+6. server에서는 josn을 name을 `create_edit`로 레코드로 넣는다.
+7. step4 -> submit -> 만들어진 table_{id}를 어떻게 detail view 할지 결정하는  json을 만들어서 server에 보낸다.
+8. server에서는 josn을 name을 `view`로 레코드로 넣는다.
+9. step1,2,3,4 는 json 파일을 만드는 UI를 제공해야한다.
+
+```sql
+create table if not exists meta_data(
+    id integer primary key,
+    board_id integer not null,
+    name text not null, -- `table`,`columns`,`create_edit`,`view`,`list`
+    meta text not null, --json format
+    schema text not null,
+    created_at timestamp not null default current_timestamp,
+    updated_at timestamp not null default current_timestamp
+);
+```
+
+Step 1 → {table: {...}, columns: {fields: [...]}}
+
+{
+  table: {
+    name: "일지",
+    note: "매일 작성하는 개인 일지",
+    is_file_attach: false
+  },
+  columns: {
+    fields: [
+      { label: "날짜", name: "ymd", data_type: "ymd", required: true },
+      { label: "제목", name: "title", data_type: "string", required: true }
+    ]
+  }
+}
+Step 2 → {list: {...}}
+
+{
+  list: {
+    view_mode: "table",
+    display_columns: ["ymd", "title", "content"],
+    pagination: { enabled: true, page_size: 20 },
+    default_sort: { column: "ymd", order: "desc" },
+    search: { enabled: true, columns: ["title", "content"] }
+  }
+}
+Step 3 → {create_edit: {fields: [...]}}
+
+{
+  create_edit: {
+    fields: [
+      { name: "ymd", label: "날짜", element: "input", element_type: "date", required: true },
+      { name: "title", label: "제목", element: "input", element_type: "text", required: true }
+    ]
+  }
+}
+Step 4 → {view: {display_fields: [...]}}
+
+{
+  view: {
+    display_fields: [
+      { name: "ymd", label: "작성일", display_type: "date", format: "YYYY-MM-DD", order: 1 },
+      { name: "title", label: "제목", display_type: "text", style_class: "field-title", order: 2 }
+    ]
+  }
+}
+모두 docs/ 설계문서와 동일한 JSON 스키마를 따르도록 수정되었습니다!

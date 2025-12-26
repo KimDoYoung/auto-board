@@ -144,21 +144,20 @@ const wizardStep2 = {
         const searchColumns = Array.from(document.querySelectorAll('.search-column:checked')).map(el => el.value);
 
         return {
-            list_config: {
-                display_mode: document.querySelector('input[name="displayMode"]:checked').value,
-                columns: displayColumns,
+            list: {
+                view_mode: document.querySelector('input[name="displayMode"]:checked').value,
+                display_columns: displayColumns,
                 pagination: {
                     enabled: document.getElementById('paginationEnabled').checked,
                     page_size: parseInt(document.getElementById('pageSize').value)
                 },
-                sort: {
-                    enabled: true,
+                default_sort: {
                     column: document.getElementById('sortColumn').value,
                     order: document.getElementById('sortOrder').value
                 },
                 search: {
                     enabled: document.getElementById('searchEnabled').checked,
-                    searchable_columns: searchColumns
+                    columns: searchColumns
                 }
             }
         };
@@ -168,7 +167,7 @@ const wizardStep2 = {
         try {
             const formData = this.getFormData();
 
-            if (formData.list_config.columns.length === 0) {
+            if (formData.list.display_columns.length === 0) {
                 alert('최소 1개 이상의 표시 항목을 선택하세요.');
                 return;
             }

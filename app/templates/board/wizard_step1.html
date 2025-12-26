@@ -192,9 +192,14 @@ const wizardStep1 = {
         }
 
         return {
-            board_name: boardName,
-            board_note: boardNote,
-            columns
+            table: {
+                name: boardName,
+                note: boardNote,
+                is_file_attach: false
+            },
+            columns: {
+                fields: columns
+            }
         };
     },
 

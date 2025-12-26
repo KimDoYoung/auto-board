@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Step 4: 수정폼 설정 - Auto-Board{% endblock %}
+{% block title %}Step 4: 상세보기 설정 - Auto-Board{% endblock %}
 
 {% block content %}
 {% include 'common/nav.html' %}
 
-<div class="p-8 max-w-4xl mx-auto w-full">
+<div class="p-8 max-w-6xl mx-auto w-full">
     <div class="space-y-8">
         <!-- Progress Indicator -->
         <div class="flex items-center justify-between">
             <div class="flex-1">
                 <div class="flex justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-700">단계 4/5: 수정폼 설정</span>
-                    <span class="text-sm text-gray-500">80%</span>
+                    <span class="text-sm font-medium text-gray-700">단계 4/4: 상세보기 설정</span>
+                    <span class="text-sm text-gray-500">100%</span>
                 </div>
                 <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div class="h-full w-4/5 bg-indigo-500 rounded-full transition-all duration-300"></div>
+                    <div class="h-full w-full bg-indigo-500 rounded-full transition-all duration-300"></div>
                 </div>
             </div>
         </div>
@@ -27,31 +27,21 @@
             </p>
         </div>
 
-        <!-- Form Configuration -->
+        <!-- Main Configuration -->
         <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
-            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">수정폼 설정 (기록 수정)</h2>
+            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">상세보기(View) 설정</h2>
 
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 text-sm text-blue-700">
                 <p class="font-semibold mb-1">💡 팁:</p>
-                <p>수정폼은 신규 작성 폼과 동일할 수도, 다를 수도 있습니다. 예를 들어, "작성자" 필드는 신규 작성시에만 필요하고 수정시에는 제외할 수 있습니다.</p>
+                <p>기록을 상세보기할 때 각 필드를 어떻게 표시할지 설정합니다. 필드의 순서, 그룹핑, 스타일, 포맷을 지정할 수 있습니다.</p>
             </div>
 
-            <!-- Copy from Create Form Option -->
-            {% if create_config %}
-            <div class="mb-8">
-                <button onclick="wizardStep4.copyFromCreate()"
-                    class="px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 font-medium text-sm transition-colors">
-                    신규 작성 폼과 동일하게 설정
-                </button>
-            </div>
-            {% endif %}
-
-            <div class="space-y-6 mb-8" id="formSections">
-                <!-- Default section will be created by JS -->
+            <div id="fieldsContainer" class="space-y-6 mb-8">
+                <!-- Fields will be dynamically generated here -->
             </div>
 
             <!-- Add Section Button -->
-            <button onclick="wizardStep4.addSection()"
+            <button onclick="viewStep4.addSection()"
                 class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2 mb-8">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -59,18 +49,31 @@
                 섹션 추가
             </button>
 
-            <!-- Form Field Reference -->
-            <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 space-y-2">
-                <p class="font-semibold">입력 필드 타입:</p>
-                <ul class="text-xs grid grid-cols-2 gap-2">
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">text</span> - 한 줄 입력</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">textarea</span> - 여러 줄 입력</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">number</span> - 숫자</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">date</span> - 날짜</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">select</span> - 선택 드롭다운</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">checkbox</span> - 체크박스</li>
+            <!-- Field Type Reference -->
+            <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
+                <p class="font-semibold mb-2">표시 타입:</p>
+                <ul class="grid grid-cols-2 gap-2 text-xs">
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">text</span> - 일반 텍스트</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">date</span> - 날짜 (포맷 가능)</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">datetime</span> - 날짜+시간</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">stars</span> - 별점 표시</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">currency</span> - 통화 표시</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">boolean</span> - 참/거짓</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">badge</span> - 배지 (색상 맵)</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">html</span> - HTML 콘텐츠</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">list</span> - 목록/배지 목록</li>
+                    <li><span class="font-mono bg-white px-2 py-1 rounded">file_link</span> - 파일 링크</li>
                 </ul>
             </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
+            <h3 class="text-xl font-bold text-[#1a1a2e] mb-4 border-b pb-3">JSON 미리보기</h3>
+            <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-xs font-mono" id="jsonPreview">
+{
+  "display_fields": []
+}</pre>
         </div>
 
         <!-- Navigation Buttons -->
@@ -79,35 +82,86 @@
                 class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
                 이전 단계
             </a>
-            <button onclick="wizardStep4.submit()"
+            <button onclick="viewStep4.submit()"
                 class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
-                다음 단계 (완료)
+                마무리 (완료)
             </button>
         </div>
     </div>
 </div>
 
+<style>
+.field-card {
+    @apply bg-white p-4 rounded-lg border border-gray-200 space-y-3;
+}
+.field-card.section-header {
+    @apply bg-gray-50 border-gray-300;
+}
+</style>
+
 <script>
-const wizardStep4 = {
+// Variables from Jinja2 template
+const columnsData = JSON.parse('{{ columns|tojson|safe }}');
+
+const viewStep4 = {
     sectionCount: 0,
     fieldCount: {},
+    columns: columnsData,
+
+    init() {
+        // Initialize with default section
+        this.addSection();
+        this.populateFieldsFromColumns();
+        this.updateJsonPreview();
+    },
+
+    populateFieldsFromColumns() {
+        if (this.columns && this.columns.fields && this.columns.fields.length > 0) {
+            const fieldsContainer = document.querySelector('[data-section-fields="1"]');
+            this.columns.fields.forEach((col, idx) => {
+                this.addField(1);
+                const fieldEl = fieldsContainer.querySelectorAll('.field-card:not(.section-header)')[idx];
+                if (fieldEl) {
+                    fieldEl.querySelector('.field-name').value = col.name;
+                    fieldEl.querySelector('.field-label').value = col.label || col.name;
+                    // 데이터 타입에 따라 기본 display_type 설정
+                    const displayType = this.getDefaultDisplayType(col.data_type);
+                    fieldEl.querySelector('.field-display-type').value = displayType;
+                    fieldEl.querySelector('.field-display-type').dispatchEvent(new Event('change'));
+                }
+            });
+        }
+    },
+
+    getDefaultDisplayType(dataType) {
+        const mapping = {
+            'ymd': 'date',
+            'datetime': 'datetime',
+            'integer': 'text',
+            'float': 'currency',
+            'boolean': 'boolean',
+            'text': 'html',
+            'string': 'text'
+        };
+        return mapping[dataType] || 'text';
+    },
 
     addSection() {
         this.sectionCount++;
-        const container = document.getElementById('formSections');
+        const container = document.getElementById('fieldsContainer');
 
         const section = document.createElement('div');
         section.className = 'bg-gray-50 rounded-lg p-6 space-y-4 border border-gray-200';
         section.dataset.sectionIndex = this.sectionCount;
 
         section.innerHTML = `
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center mb-4">
                 <div class="flex-1">
                     <label class="block text-gray-700 font-medium text-sm mb-2">섹션 제목 (선택)</label>
                     <input type="text" class="section-title w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 기본 정보, 추가 정보">
+                        placeholder="예: 기본 정보, 상세 내용, 메타정보">
                 </div>
-                <button onclick="wizardStep4.removeSection(${this.sectionCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm mt-6">
+                <button onclick="viewStep4.removeSection(${this.sectionCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm mt-6">
                     섹션 삭제
                 </button>
             </div>
@@ -116,7 +170,7 @@ const wizardStep4 = {
                 <!-- Fields will be added here -->
             </div>
 
-            <button onclick="wizardStep4.addField(${this.sectionCount})"
+            <button onclick="viewStep4.addField(${this.sectionCount})"
                 class="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -134,131 +188,487 @@ const wizardStep4 = {
         const fieldsContainer = document.querySelector(`[data-section-fields="${sectionIndex}"]`);
 
         const field = document.createElement('div');
-        field.className = 'bg-white p-4 rounded-lg border border-gray-200 space-y-3';
+        field.className = 'field-card';
         field.dataset.fieldIndex = this.fieldCount[sectionIndex];
+        field.dataset.sectionIndex = sectionIndex;
 
         field.innerHTML = `
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-4 gap-3">
                 <div>
                     <label class="block text-gray-700 font-medium text-xs mb-1">필드명</label>
-                    <input type="text" class="field-name w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" readonly>
+                    <select class="field-name w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        <option value="">선택하세요</option>
+                        ${this.columns.map(col => `<option value="${col.name}">${col.label || col.name}</option>`).join('')}
+                    </select>
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium text-xs mb-1">라벨</label>
                     <input type="text" class="field-label w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 제목">
+                        placeholder="표시할 라벨">
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">입력 타입</label>
-                    <select class="field-type w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                    <label class="block text-gray-700 font-medium text-xs mb-1">표시 타입</label>
+                    <select class="field-display-type w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        onchange="viewStep4.updateDisplayTypeOptions(this)">
                         <option value="text">text</option>
-                        <option value="textarea">textarea</option>
-                        <option value="number">number</option>
                         <option value="date">date</option>
-                        <option value="select">select</option>
-                        <option value="checkbox">checkbox</option>
+                        <option value="datetime">datetime</option>
+                        <option value="stars">stars</option>
+                        <option value="currency">currency</option>
+                        <option value="boolean">boolean</option>
+                        <option value="badge">badge</option>
+                        <option value="html">html</option>
+                        <option value="list">list</option>
+                        <option value="file_link">file_link</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">너비</label>
+                    <input type="text" class="field-width w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        placeholder="30%, auto, 등">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">라인 그룹 (같은 줄 표시)</label>
+                    <input type="text" class="field-inline-group w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                        placeholder="예: header, meta, footer">
+                </div>
                 <div>
                     <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" class="field-required w-4 h-4 text-indigo-600 rounded" checked>
-                        <span class="text-gray-700 text-sm">필수 입력</span>
+                        <input type="checkbox" class="field-full-width w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-gray-700 text-sm">전체 너비</span>
                     </label>
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">자수 제한</label>
-                    <input type="number" class="field-rows w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 3 (textarea용)">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="field-hide-label w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-gray-700 text-sm">라벨 숨기기</span>
+                    </label>
                 </div>
             </div>
 
             <div>
-                <label class="block text-gray-700 font-medium text-xs mb-1">도움말 텍스트</label>
-                <input type="text" class="field-help w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                    placeholder="예: 기록물의 제목을 입력하세요">
+                <label class="block text-gray-700 font-medium text-xs mb-1">스타일 클래스</label>
+                <select class="field-style-class w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                    <option value="">선택 안 함</option>
+                    <option value="field-title">field-title (큰 제목)</option>
+                    <option value="field-subtitle">field-subtitle (중간 제목)</option>
+                    <option value="field-heading">field-heading (소제목)</option>
+                    <option value="field-normal">field-normal (일반 텍스트)</option>
+                    <option value="field-small">field-small (작은 텍스트)</option>
+                    <option value="field-highlight">field-highlight (강조)</option>
+                    <option value="field-important">field-important (중요)</option>
+                    <option value="field-info">field-info (정보)</option>
+                </select>
             </div>
 
-            <button onclick="wizardStep4.removeField(this)" class="text-red-600 hover:text-red-700 font-medium text-xs">
-                필드 삭제
-            </button>
+            <div id="displayTypeOptions_${sectionIndex}_${this.fieldCount[sectionIndex]}" class="space-y-3">
+                <!-- Display type specific options will be added here -->
+            </div>
+
+            <div>
+                <button onclick="viewStep4.removeField(this)" class="text-red-600 hover:text-red-700 font-medium text-xs">
+                    필드 삭제
+                </button>
+            </div>
         `;
 
         fieldsContainer.appendChild(field);
+
+        // Update preview on field change
+        field.addEventListener('change', () => this.updateJsonPreview());
+        field.addEventListener('input', () => this.updateJsonPreview());
+    },
+
+    updateDisplayTypeOptions(selectElement) {
+        const displayType = selectElement.value;
+        const fieldCard = selectElement.closest('.field-card');
+        const sectionIndex = fieldCard.dataset.sectionIndex;
+        const fieldIndex = fieldCard.dataset.fieldIndex;
+        const optionsContainer = document.getElementById(`displayTypeOptions_${sectionIndex}_${fieldIndex}`);
+
+        if (!optionsContainer) return;
+
+        optionsContainer.innerHTML = '';
+
+        if (displayType === 'date') {
+            optionsContainer.innerHTML = `
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">날짜 포맷</label>
+                    <input type="text" class="field-format w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        placeholder="예: YYYY년 MM월 DD일" value="YYYY-MM-DD">
+                </div>
+            `;
+        } else if (displayType === 'datetime') {
+            optionsContainer.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">날짜시간 포맷</label>
+                        <input type="text" class="field-format w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="예: YYYY-MM-DD HH:mm" value="YYYY-MM-DD HH:mm">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer mt-6">
+                            <input type="checkbox" class="field-relative w-4 h-4 text-indigo-600 rounded">
+                            <span class="text-gray-700 text-sm">상대 시간 (2시간 전)</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+        } else if (displayType === 'stars') {
+            optionsContainer.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">최대 별점</label>
+                        <input type="number" class="field-max-stars w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="10" value="10" min="1" max="10">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer mt-6">
+                            <input type="checkbox" class="field-show-number w-4 h-4 text-indigo-600 rounded" checked>
+                            <span class="text-gray-700 text-sm">숫자 표시</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+        } else if (displayType === 'currency') {
+            optionsContainer.innerHTML = `
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">통화 코드</label>
+                        <input type="text" class="field-currency-code w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="KRW" value="KRW">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">소수점</label>
+                        <input type="number" class="field-decimal-places w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="0" value="0" min="0" max="3">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer mt-6">
+                            <input type="checkbox" class="field-thousands-separator w-4 h-4 text-indigo-600 rounded" checked>
+                            <span class="text-gray-700 text-sm">천단위 표시</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+        } else if (displayType === 'boolean') {
+            optionsContainer.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">참 텍스트</label>
+                        <input type="text" class="field-true-text w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="공개" value="공개">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">거짓 텍스트</label>
+                        <input type="text" class="field-false-text w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="비공개" value="비공개">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">참 색상</label>
+                        <input type="text" class="field-true-class w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="text-green-600" value="text-green-600">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">거짓 색상</label>
+                        <input type="text" class="field-false-class w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="text-gray-600" value="text-gray-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="field-show-icon w-4 h-4 text-indigo-600 rounded" checked>
+                        <span class="text-gray-700 text-sm">아이콘 표시</span>
+                    </label>
+                </div>
+            `;
+        } else if (displayType === 'badge') {
+            optionsContainer.innerHTML = `
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">색상 맵 (JSON 형식)</label>
+                    <textarea class="field-badge-color-map w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono h-24"
+                        placeholder='{"work": "blue", "personal": "green"}'></textarea>
+                </div>
+            `;
+        } else if (displayType === 'html') {
+            optionsContainer.innerHTML = `
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="field-sanitize w-4 h-4 text-indigo-600 rounded" checked>
+                        <span class="text-gray-700 text-sm">위험한 콘텐츠 제거</span>
+                    </label>
+                </div>
+            `;
+        } else if (displayType === 'list') {
+            optionsContainer.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">표시 방식</label>
+                        <select class="field-display-as w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                            <option value="badges">배지</option>
+                            <option value="comma">쉼표 구분</option>
+                            <option value="bullet">글머리</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium text-xs mb-1">구분자</label>
+                        <input type="text" class="field-separator w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder=" " value=" ">
+                    </div>
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="field-hide-if-empty w-4 h-4 text-indigo-600 rounded" checked>
+                        <span class="text-gray-700 text-sm">비어있으면 숨기기</span>
+                    </label>
+                </div>
+            `;
+        } else if (displayType === 'file_link') {
+            optionsContainer.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="field-show-size w-4 h-4 text-indigo-600 rounded" checked>
+                            <span class="text-gray-700 text-sm">파일 크기 표시</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="field-show-icon w-4 h-4 text-indigo-600 rounded" checked>
+                            <span class="text-gray-700 text-sm">아이콘 표시</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="field-download w-4 h-4 text-indigo-600 rounded" checked>
+                        <span class="text-gray-700 text-sm">다운로드 가능</span>
+                    </label>
+                </div>
+            `;
+        }
+
+        // Re-attach change listeners
+        optionsContainer.addEventListener('change', () => this.updateJsonPreview());
+        optionsContainer.addEventListener('input', () => this.updateJsonPreview());
     },
 
     removeField(button) {
-        button.closest('.bg-white').remove();
+        button.closest('.field-card').remove();
+        this.updateJsonPreview();
     },
 
     removeSection(sectionIndex) {
         document.querySelector(`[data-section-index="${sectionIndex}"]`).remove();
+        this.updateJsonPreview();
     },
 
-    copyFromCreate() {
-        // Clear existing sections
-        document.getElementById('formSections').innerHTML = '';
-        this.sectionCount = 0;
-        this.fieldCount = {};
+    updateJsonPreview() {
+        const displayFields = [];
 
-        // Copy from create_config
-        const createConfig = {{ create_config|tojson if create_config else 'null' }};
-        if (createConfig && createConfig.sections) {
-            createConfig.sections.forEach(section => {
-                this.addSection();
-                const sectionEl = document.querySelector(`[data-section-index="${this.sectionCount}"]`);
-                sectionEl.querySelector('.section-title').value = section.title || '';
+        document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
+            const sectionIndex = sectionEl.dataset.sectionIndex;
+            const sectionTitle = sectionEl.querySelector('.section-title').value.trim() || null;
 
-                section.fields.forEach(field => {
-                    this.addField(this.sectionCount);
-                    const fieldEl = sectionEl.querySelector('[data-field-index]:last-of-type');
-                    fieldEl.querySelector('.field-name').value = field.name;
-                    fieldEl.querySelector('.field-label').value = field.label;
-                    fieldEl.querySelector('.field-type').value = field.input_type;
-                    fieldEl.querySelector('.field-required').checked = field.required;
-                    if (field.help_text) fieldEl.querySelector('.field-help').value = field.help_text;
-                    if (field.rows) fieldEl.querySelector('.field-rows').value = field.rows;
-                });
+            sectionEl.querySelectorAll('.field-card:not(.section-header)').forEach(fieldEl => {
+                const fieldName = fieldEl.querySelector('.field-name').value.trim();
+                const fieldLabel = fieldEl.querySelector('.field-label').value.trim();
+                const displayType = fieldEl.querySelector('.field-display-type').value;
+                const width = fieldEl.querySelector('.field-width').value.trim() || null;
+                const inlineGroup = fieldEl.querySelector('.field-inline-group').value.trim() || null;
+                const fullWidth = fieldEl.querySelector('.field-full-width').checked;
+                const hideLabel = fieldEl.querySelector('.field-hide-label').checked;
+                const styleClass = fieldEl.querySelector('.field-style-class').value || null;
+                const order = displayFields.length + 1;
+
+                if (!fieldName) return;
+
+                const field = {
+                    name: fieldName,
+                    label: fieldLabel || fieldName,
+                    display_type: displayType,
+                    order: order,
+                    ...(width && { width }),
+                    ...(inlineGroup && { inline_group: inlineGroup }),
+                    ...(fullWidth && { full_width: true }),
+                    ...(hideLabel && { hide_label: true }),
+                    ...(styleClass && { style_class: styleClass }),
+                    ...(sectionTitle && { section: `section_${sectionIndex}`, section_title: sectionTitle })
+                };
+
+                // Add display type specific options
+                if (displayType === 'date') {
+                    const format = fieldEl.querySelector('.field-format')?.value.trim();
+                    if (format) field.format = format;
+                } else if (displayType === 'datetime') {
+                    const format = fieldEl.querySelector('.field-format')?.value.trim();
+                    if (format) field.format = format;
+                    const relative = fieldEl.querySelector('.field-relative')?.checked;
+                    if (relative) field.relative = true;
+                } else if (displayType === 'stars') {
+                    const maxStars = fieldEl.querySelector('.field-max-stars')?.value;
+                    if (maxStars) field.max_stars = parseInt(maxStars);
+                    const showNumber = fieldEl.querySelector('.field-show-number')?.checked;
+                    if (showNumber) field.show_number = true;
+                } else if (displayType === 'currency') {
+                    const currencyCode = fieldEl.querySelector('.field-currency-code')?.value.trim();
+                    if (currencyCode) field.currency_code = currencyCode;
+                    const decimalPlaces = fieldEl.querySelector('.field-decimal-places')?.value;
+                    if (decimalPlaces !== undefined) field.decimal_places = parseInt(decimalPlaces);
+                    const separator = fieldEl.querySelector('.field-thousands-separator')?.checked;
+                    if (separator) field.thousands_separator = true;
+                } else if (displayType === 'boolean') {
+                    const trueText = fieldEl.querySelector('.field-true-text')?.value.trim();
+                    if (trueText) field.true_text = trueText;
+                    const falseText = fieldEl.querySelector('.field-false-text')?.value.trim();
+                    if (falseText) field.false_text = falseText;
+                    const trueClass = fieldEl.querySelector('.field-true-class')?.value.trim();
+                    if (trueClass) field.true_class = trueClass;
+                    const falseClass = fieldEl.querySelector('.field-false-class')?.value.trim();
+                    if (falseClass) field.false_class = falseClass;
+                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
+                    if (showIcon) field.show_icon = true;
+                } else if (displayType === 'badge') {
+                    const colorMap = fieldEl.querySelector('.field-badge-color-map')?.value.trim();
+                    if (colorMap) {
+                        try {
+                            field.badge_color_map = JSON.parse(colorMap);
+                        } catch (e) {
+                            // Invalid JSON, skip
+                        }
+                    }
+                } else if (displayType === 'html') {
+                    const sanitize = fieldEl.querySelector('.field-sanitize')?.checked;
+                    if (sanitize) field.sanitize = true;
+                } else if (displayType === 'list') {
+                    const displayAs = fieldEl.querySelector('.field-display-as')?.value;
+                    if (displayAs) field.display_as = displayAs;
+                    const separator = fieldEl.querySelector('.field-separator')?.value;
+                    if (separator) field.separator = separator;
+                    const hideIfEmpty = fieldEl.querySelector('.field-hide-if-empty')?.checked;
+                    if (hideIfEmpty) field.hide_if_empty = true;
+                } else if (displayType === 'file_link') {
+                    const showSize = fieldEl.querySelector('.field-show-size')?.checked;
+                    if (showSize) field.show_size = true;
+                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
+                    if (showIcon) field.show_icon = true;
+                    const download = fieldEl.querySelector('.field-download')?.checked;
+                    if (download) field.download = true;
+                }
+
+                displayFields.push(field);
             });
-        }
+        });
+
+        const jsonData = { display_fields: displayFields };
+        document.getElementById('jsonPreview').textContent = JSON.stringify(jsonData, null, 2);
     },
 
     getFormData() {
-        const sections = [];
+        const displayFields = [];
 
         document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
-            const title = sectionEl.querySelector('.section-title').value.trim() || null;
-            const fields = [];
+            const sectionIndex = sectionEl.dataset.sectionIndex;
+            const sectionTitle = sectionEl.querySelector('.section-title').value.trim() || null;
 
-            sectionEl.querySelectorAll('[data-field-index]').forEach(fieldEl => {
-                const name = fieldEl.querySelector('.field-name').value || fieldEl.querySelector('.field-label').value.toLowerCase();
-                const label = fieldEl.querySelector('.field-label').value.trim();
-                const inputType = fieldEl.querySelector('.field-type').value;
-                const required = fieldEl.querySelector('.field-required').checked;
-                const helpText = fieldEl.querySelector('.field-help').value.trim() || null;
-                const rows = fieldEl.querySelector('.field-rows').value;
+            sectionEl.querySelectorAll('.field-card:not(.section-header)').forEach(fieldEl => {
+                const fieldName = fieldEl.querySelector('.field-name').value.trim();
+                if (!fieldName) return;
 
-                fields.push({
-                    name,
-                    label,
-                    input_type: inputType,
-                    required,
-                    help_text: helpText,
-                    rows: rows ? parseInt(rows) : null
-                });
+                const fieldLabel = fieldEl.querySelector('.field-label').value.trim();
+                const displayType = fieldEl.querySelector('.field-display-type').value;
+                const width = fieldEl.querySelector('.field-width').value.trim() || null;
+                const inlineGroup = fieldEl.querySelector('.field-inline-group').value.trim() || null;
+                const fullWidth = fieldEl.querySelector('.field-full-width').checked;
+                const hideLabel = fieldEl.querySelector('.field-hide-label').checked;
+                const styleClass = fieldEl.querySelector('.field-style-class').value || null;
+                const order = displayFields.length + 1;
+
+                const field = {
+                    name: fieldName,
+                    label: fieldLabel || fieldName,
+                    display_type: displayType,
+                    order: order,
+                    ...(width && { width }),
+                    ...(inlineGroup && { inline_group: inlineGroup }),
+                    ...(fullWidth && { full_width: true }),
+                    ...(hideLabel && { hide_label: true }),
+                    ...(styleClass && { style_class: styleClass }),
+                    ...(sectionTitle && { section: `section_${sectionIndex}`, section_title: sectionTitle })
+                };
+
+                // Add display type specific options
+                if (displayType === 'date') {
+                    const format = fieldEl.querySelector('.field-format')?.value.trim();
+                    if (format) field.format = format;
+                } else if (displayType === 'datetime') {
+                    const format = fieldEl.querySelector('.field-format')?.value.trim();
+                    if (format) field.format = format;
+                    const relative = fieldEl.querySelector('.field-relative')?.checked;
+                    if (relative) field.relative = true;
+                } else if (displayType === 'stars') {
+                    const maxStars = fieldEl.querySelector('.field-max-stars')?.value;
+                    if (maxStars) field.max_stars = parseInt(maxStars);
+                    const showNumber = fieldEl.querySelector('.field-show-number')?.checked;
+                    if (showNumber) field.show_number = true;
+                } else if (displayType === 'currency') {
+                    const currencyCode = fieldEl.querySelector('.field-currency-code')?.value.trim();
+                    if (currencyCode) field.currency_code = currencyCode;
+                    const decimalPlaces = fieldEl.querySelector('.field-decimal-places')?.value;
+                    if (decimalPlaces !== undefined) field.decimal_places = parseInt(decimalPlaces);
+                    const separator = fieldEl.querySelector('.field-thousands-separator')?.checked;
+                    if (separator) field.thousands_separator = true;
+                } else if (displayType === 'boolean') {
+                    const trueText = fieldEl.querySelector('.field-true-text')?.value.trim();
+                    if (trueText) field.true_text = trueText;
+                    const falseText = fieldEl.querySelector('.field-false-text')?.value.trim();
+                    if (falseText) field.false_text = falseText;
+                    const trueClass = fieldEl.querySelector('.field-true-class')?.value.trim();
+                    if (trueClass) field.true_class = trueClass;
+                    const falseClass = fieldEl.querySelector('.field-false-class')?.value.trim();
+                    if (falseClass) field.false_class = falseClass;
+                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
+                    if (showIcon) field.show_icon = true;
+                } else if (displayType === 'badge') {
+                    const colorMap = fieldEl.querySelector('.field-badge-color-map')?.value.trim();
+                    if (colorMap) {
+                        try {
+                            field.badge_color_map = JSON.parse(colorMap);
+                        } catch (e) {
+                            // Invalid JSON, skip
+                        }
+                    }
+                } else if (displayType === 'html') {
+                    const sanitize = fieldEl.querySelector('.field-sanitize')?.checked;
+                    if (sanitize) field.sanitize = true;
+                } else if (displayType === 'list') {
+                    const displayAs = fieldEl.querySelector('.field-display-as')?.value;
+                    if (displayAs) field.display_as = displayAs;
+                    const separator = fieldEl.querySelector('.field-separator')?.value;
+                    if (separator) field.separator = separator;
+                    const hideIfEmpty = fieldEl.querySelector('.field-hide-if-empty')?.checked;
+                    if (hideIfEmpty) field.hide_if_empty = true;
+                } else if (displayType === 'file_link') {
+                    const showSize = fieldEl.querySelector('.field-show-size')?.checked;
+                    if (showSize) field.show_size = true;
+                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
+                    if (showIcon) field.show_icon = true;
+                    const download = fieldEl.querySelector('.field-download')?.checked;
+                    if (download) field.download = true;
+                }
+
+                displayFields.push(field);
             });
-
-            sections.push({ title, fields });
         });
 
         return {
-            edit_config: {
-                sections: sections.length > 0 ? sections : [{
-                    title: null,
-                    fields: []
-                }]
+            view: {
+                display_fields: displayFields
             }
         };
     },
@@ -287,18 +697,9 @@ const wizardStep4 = {
     }
 };
 
-// Initialize with one section
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    wizardStep4.addSection();
-    // Add fields for each column
-    {% for column in columns %}
-    wizardStep4.addField(1);
-    const lastField = document.querySelector('[data-field-index]');
-    if (lastField) {
-        lastField.querySelector('.field-name').value = '{{ column.name }}';
-        lastField.querySelector('.field-label').value = '{{ column.label }}';
-    }
-    {% endfor %}
+    viewStep4.init();
 });
 </script>
 {% endblock %}
