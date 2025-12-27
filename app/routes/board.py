@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 import sqlite3
+from typing import Optional
 
 from app.core.logger import get_logger
 from app.core.deps import get_db_connection, get_current_user_from_cookie
@@ -120,9 +121,7 @@ async def wizard_step1_submit(
             for field in columns_with_names:
                 col_type = map_sqlite_type(field.get("data_type", "string"))
                 col_name = field.get("name")
-                # comment가 없으면 label을 comment로 사용
-                col_comment = field.get("comment") or field.get("label")
-                ddl_columns.append(f"{col_name} {col_type} -- {col_comment}")
+                ddl_columns.append(f"{col_name} {col_type}")
 
             ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
@@ -211,8 +210,7 @@ async def wizard_step1_submit(
             for field in columns_with_names:
                 col_type = map_sqlite_type(field.get("data_type", "string"))
                 col_name = field.get("name")
-                col_comment = field.get("comment") or field.get("label")
-                ddl_columns.append(f"{col_name} {col_type} -- {col_comment}")
+                ddl_columns.append(f"{col_name} {col_type}")
 
             ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")

@@ -62,9 +62,7 @@ class DBManager:
             ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
             for field in board_data.columns.fields:
                 col_type = map_sqlite_type(field.data_type)
-                # comment가 없으면 label을 comment로 사용
-                col_comment = getattr(field, 'comment', None) or field.label
-                ddl_columns.append(f"{field.name} {col_type} -- {col_comment}")
+                ddl_columns.append(f"{field.name} {col_type}")
 
             ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
