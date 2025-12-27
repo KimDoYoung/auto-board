@@ -14,7 +14,9 @@
       "Bash(npm --version:*)",
       "Bash(pytest:*)",
       "Bash(uv sync:*)",
-      "Bash(python -m pip:*)"
+      "Bash(python -m pip:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(mkdir:*)"
     ]
   }
 }

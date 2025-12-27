@@ -13,8 +13,9 @@ from typing import Optional
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.security import create_access_token, verify_password
-from app.core.deps import get_current_user_from_cookie
+from app.core.deps import get_current_user_from_cookie, get_db_connection
 from app.schemas.user import User
+from app.utils.db_manager import DBManager
 import sqlite3
 
 logger = get_logger(__name__)
@@ -26,13 +27,25 @@ def get_templates(request: Request) -> Jinja2Templates:
     return request.app.state.templates
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request, user: Optional[User] = Depends(get_current_user_from_cookie)):
+async def home(
+    request: Request,
+    user: Optional[User] = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
     """메인 페이지 - 로그인 상태에 따라 분기"""
     templates = get_templates(request)
-    
+
     if user:
         # 로그인 상태 -> index.html (Dashboard)
-        return templates.TemplateResponse("index.html", {"request": request, "user": user})
+        # 보드 목록 조회
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, note, created_at FROM boards ORDER BY id DESC")
+        boards = [dict(row) for row in cursor.fetchall()]
+
+        return templates.TemplateResponse(
+            "index.html",
+            {"request": request, "user": user, "boards": boards}
+        )
     else:
         # 비로그인 상태 -> login.html
         return templates.TemplateResponse("login.html", {"request": request})

@@ -106,13 +106,14 @@ Step 1 → {table: {...}, columns: {fields: [...]}}
 Step 2 → {list: {...}}
 
 {
-  list: {
     view_mode: "table",
     display_columns: ["ymd", "title", "content"],
-    pagination: { enabled: true, page_size: 20 },
+    pagination: { enabled: true, page_size: 10 },
     default_sort: { column: "ymd", order: "desc" },
-    search: { enabled: true, columns: ["title", "content"] }
-  }
+    search: {
+      enabled: true,
+      columns: ["title", "content"]
+    }
 }
 Step 3 → {create_edit: {fields: [...]}}
 

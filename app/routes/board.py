@@ -26,6 +26,9 @@ async def wizard_step1_form(
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
     """Step 1: 기본 정보 및 컬럼 정의 페이지 (신규 생성 또는 기존 수정)"""
+    logger.info(f"[GET] GET /boards/new/step1 요청 받음")
+    logger.info(f"[GET] 파라미터 - board_id={board_id}")
+
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
@@ -35,16 +38,30 @@ async def wizard_step1_form(
 
     # board_id가 있으면 기존 데이터 조회
     if board_id:
+        logger.info(f"[GET] board_id={board_id}로 기존 데이터 조회 시작...")
         db_manager = DBManager(conn)
         board_info = db_manager.get_board_info(board_id)
+
         if not board_info:
+            logger.error(f"[GET] ✗ 보드를 찾을 수 없음 - board_id={board_id}")
             return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
 
-        board_meta = db_manager.get_metadata(board_id, "table") or {}
-        columns_data = board_meta.get("columns", [])
+        logger.info(f"[GET] ✓ 보드 정보 찾음: {board_info['name']}")
 
+        board_meta = db_manager.get_metadata(board_id, "table") or {}
+        logger.info(f"[GET] ✓ 메타데이터 조회 완료")
+        logger.info(f"[GET] 메타데이터: {board_meta}")
+
+        columns_data = board_meta.get("columns", [])
+        logger.info(f"[GET] ✓ 컬럼 데이터 추출: {len(columns_data)}개")
+        for i, col in enumerate(columns_data, 1):
+            logger.info(f"[GET]   → col{i}: {col.get('label')} ({col.get('data_type')})")
+    else:
+        logger.info(f"[GET] 신규 생성 모드 (board_id 없음)")
+
+    logger.info(f"[GET] ✓ 템플릿 렌더링 시작...")
     return request.app.state.templates.TemplateResponse(
-        "board/wizard_step1.html",
+        "board/wizard/step1.html",
         {
             "request": request,
             "user": user,
@@ -63,33 +80,42 @@ async def wizard_step1_submit(
     """Step 1: Board 생성 및 컬럼 메타데이터 저장 (신규 생성 또는 기존 수정)"""
     try:
         form_data = await request.json()
+        logger.info(f"[1] POST /boards/new/step1 요청 받음")
+
         board_id = form_data.get("board_id")  # 수정 모드인지 신규 모드인지 판단
         board_name = form_data.get("name")
         board_note = form_data.get("note", "")
         is_file_attach = form_data.get("is_file_attach", False)
         columns_data = form_data.get("columns", [])
 
+        logger.info(f"[2] 데이터 파싱 - board_id={board_id}, 보드명={board_name}, 컬럼수={len(columns_data)}")
+
         db_manager = DBManager(conn)
         cursor = conn.cursor()
 
         # ===== 신규 생성 모드 =====
         if not board_id:
-            logger.info(f"🚀 Step 1 Submit: Creating NEW board '{board_name}' with {len(columns_data)} columns")
+            logger.info(f"[3] ★ 신규 생성 모드 시작: '{board_name}' 보드 생성 (컬럼 {len(columns_data)}개)")
 
             # 1. 최대 ID를 구해서 다음 ID 계산
+            logger.info(f"[4] 다음 보드 ID 계산 중...")
             cursor.execute("SELECT MAX(id) FROM boards")
             result = cursor.fetchone()
             next_board_id = (result[0] or 0) + 1
             physical_table_name = f"table_{next_board_id}"
+            logger.info(f"[5] ✓ 계산 완료: board_id={next_board_id}, 물리테이블명={physical_table_name}")
 
             # 2. Board 신규 생성 (physical_table_name 포함)
+            logger.info(f"[6] boards 테이블에 보드 정보 삽입 중...")
             cursor.execute(
                 "INSERT INTO boards (name, note, physical_table_name) VALUES (?, ?, ?)",
                 (board_name, board_note, physical_table_name)
             )
             board_id = cursor.lastrowid
+            logger.info(f"[7] ✓ 삽입 완료: board_id={board_id}")
 
             # 3. 컬럼명 자동 생성 및 메타데이터 준비 (설계 문서 준수)
+            logger.info(f"[8] 컬럼 메타데이터 준비 중...")
             columns_with_names = []
             for idx, field in enumerate(columns_data, 1):
                 col_name = f"col{idx}"
@@ -104,6 +130,8 @@ async def wizard_step1_submit(
                     col_data["comment"] = field.get("comment")
 
                 columns_with_names.append(col_data)
+                logger.info(f"     → {col_name}: {col_data['label']} ({col_data['data_type']})")
+            logger.info(f"[9] ✓ 메타데이터 준비 완료: {len(columns_with_names)}개 컬럼")
 
             columns_meta = {
                 "name": board_name,
@@ -113,52 +141,69 @@ async def wizard_step1_submit(
                 "id": board_id,
                 "columns": columns_with_names
             }
+            logger.info(f"[10] meta_data 테이블에 메타데이터 저장 중...")
             db_manager.save_metadata(board_id, "table", columns_meta)
+            logger.info(f"[11] ✓ 메타데이터 저장 완료")
 
             # 4. 물리 테이블 생성
+            logger.info(f"[12] 물리 테이블 생성 중...")
             from app.utils.db_manager import map_sqlite_type
             ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
             for field in columns_with_names:
                 col_type = map_sqlite_type(field.get("data_type", "string"))
                 col_name = field.get("name")
                 ddl_columns.append(f"{col_name} {col_type}")
+                logger.info(f"     → DDL: {col_name} {col_type}")
 
             ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 
             create_table_sql = f"CREATE TABLE {physical_table_name} ({', '.join(ddl_columns)})"
-            logger.info(f"🛠 Creating physical table: {create_table_sql}")
+            logger.info(f"[13] SQL 실행: {create_table_sql}")
+            logger.info(f"[14] '{physical_table_name}' 물리 테이블 생성 실행 중...")
             cursor.execute(create_table_sql)
+            logger.info(f"[15] ✓ 물리 테이블 생성 성공")
 
             # 5. 테이블 검증 로깅
+            logger.info(f"[16] 테이블 구조 검증 중...")
             cursor.execute(f"PRAGMA table_info({physical_table_name})")
             table_info = cursor.fetchall()
-            logger.info(f"✅ Table '{physical_table_name}' created successfully")
-            logger.info(f"📋 Table structure (PRAGMA table_info):")
+            logger.info(f"[17] ✓ 검증 완료: {len(table_info)}개 컬럼 확인됨")
             for col in table_info:
-                logger.info(f"   - {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
+                logger.info(f"     → {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
 
+            logger.info(f"[18] 트랜잭션 커밋 중...")
             conn.commit()
-            logger.info(f"✅ Board created: {board_name} (ID: {board_id}, Table: {physical_table_name})")
+            logger.info(f"[19] ★★★ 신규 보드 생성 완료! ★★★")
+            logger.info(f"     - Board ID: {board_id}")
+            logger.info(f"     - Board Name: {board_name}")
+            logger.info(f"     - Physical Table: {physical_table_name}")
+            logger.info(f"     - Columns: {len(columns_with_names)}개")
 
         # ===== 수정 모드 =====
         else:
-            logger.info(f"🚀 Step 1 Submit: Updating board (ID: {board_id}) '{board_name}'")
+            logger.info(f"[3] ★ 수정 모드 시작: board_id={board_id}, '{board_name}' 보드 수정")
 
             # 1. 기존 Board 정보 조회
+            logger.info(f"[4] 기존 보드 정보 조회 중...")
             existing_board = db_manager.get_board_info(board_id)
             if not existing_board:
+                logger.error(f"[5] ✗ 오류: 보드를 찾을 수 없음 (ID={board_id})")
                 raise HTTPException(status_code=404, detail="Board not found")
 
             physical_table_name = existing_board["physical_table_name"]
+            logger.info(f"[5] ✓ 기존 보드 찾음: {existing_board['name']} (테이블: {physical_table_name})")
 
             # 2. Board 정보 UPDATE
+            logger.info(f"[6] boards 테이블 정보 업데이트 중...")
             cursor.execute(
                 "UPDATE boards SET name = ?, note = ? WHERE id = ?",
                 (board_name, board_note, board_id)
             )
+            logger.info(f"[7] ✓ 보드 정보 업데이트 완료")
 
             # 3. 컬럼명 자동 생성 및 메타데이터 준비
+            logger.info(f"[8] 컬럼 메타데이터 준비 중...")
             columns_with_names = []
             for idx, field in enumerate(columns_data, 1):
                 col_name = f"col{idx}"
@@ -172,6 +217,7 @@ async def wizard_step1_submit(
                     col_data["comment"] = field.get("comment")
 
                 columns_with_names.append(col_data)
+                logger.info(f"     → {col_name}: {col_data['label']} ({col_data['data_type']})")
 
             columns_meta = {
                 "name": board_name,
@@ -181,19 +227,24 @@ async def wizard_step1_submit(
                 "id": board_id,
                 "columns": columns_with_names
             }
+            logger.info(f"[9] ✓ 메타데이터 준비 완료: {len(columns_with_names)}개 컬럼")
 
             # 4. 메타데이터 UPDATE (save_metadata는 UPSERT 처리)
+            logger.info(f"[10] meta_data 테이블 메타데이터 업데이트 중...")
             db_manager.save_metadata(board_id, "table", columns_meta)
+            logger.info(f"[11] ✓ 메타데이터 업데이트 완료")
 
             # 5. 물리 테이블 DROP -> CREATE (수정 모드는 항상 재생성)
-            logger.info(f"🔄 Updating table structure for board {board_id}...")
+            logger.info(f"[12] 물리 테이블 구조 관리 중...")
 
             # 5-1. 기존 테이블에 데이터가 있는지 확인
+            logger.info(f"[13] {physical_table_name} 테이블의 기존 레코드 확인 중...")
             cursor.execute(f"SELECT COUNT(*) FROM {physical_table_name}")
             record_count = cursor.fetchone()[0]
+            logger.info(f"[14] ✓ 레코드 수: {record_count}개")
 
             if record_count > 0:
-                logger.warning(f"⚠️ Table {physical_table_name} has {record_count} existing record(s). Cannot modify structure.")
+                logger.error(f"[15] ✗ 오류: 테이블 구조 수정 불가 - {record_count}개 레코드 존재")
                 conn.rollback()
                 raise HTTPException(
                     status_code=400,
@@ -201,43 +252,58 @@ async def wizard_step1_submit(
                 )
 
             # 5-2. 기존 테이블 DROP
+            logger.info(f"[15] '{physical_table_name}' 테이블 DROP 중...")
             cursor.execute(f"DROP TABLE {physical_table_name}")
-            logger.info(f"🗑️ Dropped table {physical_table_name}")
+            logger.info(f"[16] ✓ 테이블 DROP 완료")
 
             # 5-3. 새 테이블 생성
+            logger.info(f"[17] 새로운 물리 테이블 생성 중...")
             from app.utils.db_manager import map_sqlite_type
             ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
             for field in columns_with_names:
                 col_type = map_sqlite_type(field.get("data_type", "string"))
                 col_name = field.get("name")
                 ddl_columns.append(f"{col_name} {col_type}")
+                logger.info(f"     → DDL: {col_name} {col_type}")
 
             ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 
             create_table_sql = f"CREATE TABLE {physical_table_name} ({', '.join(ddl_columns)})"
-            logger.info(f"🛠 Recreating physical table: {create_table_sql}")
+            logger.info(f"[18] SQL 실행: {create_table_sql}")
+            logger.info(f"[19] 새 테이블 생성 실행 중...")
             cursor.execute(create_table_sql)
+            logger.info(f"[20] ✓ 새 테이블 생성 성공")
 
             # 5-4. 테이블 검증
+            logger.info(f"[21] 테이블 구조 검증 중...")
             cursor.execute(f"PRAGMA table_info({physical_table_name})")
             table_info = cursor.fetchall()
-            logger.info(f"✅ Table '{physical_table_name}' recreated successfully")
-            logger.info(f"📋 Table structure (PRAGMA table_info):")
+            logger.info(f"[22] ✓ 검증 완료: {len(table_info)}개 컬럼 확인됨")
             for col in table_info:
-                logger.info(f"   - {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
+                logger.info(f"     → {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
 
+            logger.info(f"[23] 트랜잭션 커밋 중...")
             conn.commit()
-            logger.info(f"✅ Board updated: {board_name} (ID: {board_id}, Table: {physical_table_name})")
+            logger.info(f"[24] ★★★ 보드 수정 완료! ★★★")
+            logger.info(f"     - Board ID: {board_id}")
+            logger.info(f"     - Board Name: {board_name}")
+            logger.info(f"     - Physical Table: {physical_table_name}")
+            logger.info(f"     - Columns: {len(columns_with_names)}개")
 
+        logger.info(f"[25] ✓ 응답 반환: board_id={board_id}")
         return {"board_id": board_id, "redirect": f"/boards/new/step2/{board_id}"}
 
-    except HTTPException:
+    except HTTPException as he:
+        logger.error(f"[ERROR] HTTP 예외 발생 - Status={he.status_code}, Detail={he.detail}")
         conn.rollback()
         raise
     except Exception as e:
+        logger.error(f"[ERROR] Step 1에서 예외 발생: {type(e).__name__}")
+        logger.error(f"[ERROR] 메시지: {str(e)}")
+        import traceback
+        logger.error(f"[ERROR] 스택 트레이스:\n{traceback.format_exc()}")
         conn.rollback()
-        logger.error(f"❌ Error in Step 1: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Step 2: 목록 설정
@@ -263,7 +329,7 @@ async def wizard_step2_form(
     list_meta = db_manager.get_metadata(board_id, "list")
 
     return request.app.state.templates.TemplateResponse(
-        "board/wizard_step2.html",
+        "board/wizard/step2.html",
         {
             "request": request,
             "user": user,
@@ -320,7 +386,7 @@ async def wizard_step3_form(
     create_meta = db_manager.get_metadata(board_id, "create")
 
     return request.app.state.templates.TemplateResponse(
-        "board/wizard_step3.html",
+        "board/wizard/step3.html",
         {
             "request": request,
             "user": user,
@@ -378,7 +444,7 @@ async def wizard_step4_form(
     edit_meta = db_manager.get_metadata(board_id, "edit")
 
     return request.app.state.templates.TemplateResponse(
-        "board/wizard_step4.html",
+        "board/wizard/step4.html",
         {
             "request": request,
             "user": user,
@@ -432,7 +498,7 @@ async def wizard_finish(
         return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
 
     return request.app.state.templates.TemplateResponse(
-        "board/wizard_finish.html",
+        "board/wizard/finish.html",
         {
             "request": request,
             "user": user,
@@ -483,3 +549,151 @@ def get_board_columns(
         raise HTTPException(status_code=404, detail="Columns metadata not found")
 
     return result
+
+# ============================================================================
+# Board Deletion
+# ============================================================================
+
+@router.get("/{board_id}/delete-info")
+async def get_delete_info(
+    board_id: int,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """게시판 삭제 전 필요한 정보 조회: 테이블 존재 여부, 레코드 수"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    logger.info(f"[DELETE-INFO] board_id={board_id} 삭제 정보 조회 시작")
+
+    try:
+        db_manager = DBManager(conn)
+        board_info = db_manager.get_board_info(board_id)
+
+        if not board_info:
+            logger.error(f"[DELETE-INFO] 보드를 찾을 수 없음: board_id={board_id}")
+            raise HTTPException(status_code=404, detail="Board not found")
+
+        physical_table_name = board_info["physical_table_name"]
+        logger.info(f"[DELETE-INFO] 테이블명: {physical_table_name}")
+
+        # 1. 테이블 존재 여부 확인
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (physical_table_name,)
+        )
+        table_exists = cursor.fetchone() is not None
+        logger.info(f"[DELETE-INFO] 테이블 존재: {table_exists}")
+
+        # 2. 레코드 수 조회
+        record_count = 0
+        if table_exists:
+            cursor.execute(f"SELECT COUNT(*) FROM {physical_table_name}")
+            record_count = cursor.fetchone()[0]
+            logger.info(f"[DELETE-INFO] 레코드 수: {record_count}")
+
+        return {
+            "board_id": board_id,
+            "board_name": board_info["name"],
+            "table_exists": table_exists,
+            "record_count": record_count
+        }
+
+    except Exception as e:
+        logger.error(f"[DELETE-INFO] 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{board_id}/delete-confirm", response_class=HTMLResponse)
+async def delete_confirm_page(
+    request: Request,
+    board_id: int,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """삭제 확인 페이지 (레코드가 있을 때만)"""
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    logger.info(f"[DELETE-CONFIRM] board_id={board_id} 삭제 확인 페이지 로드")
+
+    try:
+        db_manager = DBManager(conn)
+        board_info = db_manager.get_board_info(board_id)
+
+        if not board_info:
+            logger.error(f"[DELETE-CONFIRM] 보드를 찾을 수 없음: board_id={board_id}")
+            return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+        physical_table_name = board_info["physical_table_name"]
+
+        # 레코드 수 조회
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT COUNT(*) FROM {physical_table_name}")
+        record_count = cursor.fetchone()[0]
+        logger.info(f"[DELETE-CONFIRM] 레코드 수: {record_count}")
+
+        return request.app.state.templates.TemplateResponse(
+            "board/delete_confirm.html",
+            {
+                "request": request,
+                "user": user,
+                "board": board_info,
+                "record_count": record_count
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"[DELETE-CONFIRM] 오류: {e}")
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+
+@router.delete("/{board_id}")
+async def delete_board(
+    board_id: int,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """게시판 삭제 API"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    logger.info(f"[DELETE] board_id={board_id} 삭제 시작")
+
+    try:
+        db_manager = DBManager(conn)
+        board_info = db_manager.get_board_info(board_id)
+
+        if not board_info:
+            logger.error(f"[DELETE] 보드를 찾을 수 없음: board_id={board_id}")
+            raise HTTPException(status_code=404, detail="Board not found")
+
+        physical_table_name = board_info["physical_table_name"]
+        logger.info(f"[DELETE] 물리 테이블명: {physical_table_name}")
+
+        cursor = conn.cursor()
+
+        # 1. 물리 테이블 삭제
+        try:
+            cursor.execute(f"DROP TABLE IF EXISTS {physical_table_name}")
+            logger.info(f"[DELETE] ✓ 물리 테이블 삭제: {physical_table_name}")
+        except Exception as e:
+            logger.warning(f"[DELETE] 테이블 삭제 실패 (무시됨): {e}")
+
+        # 2. meta_data 테이블에서 해당 보드의 모든 메타데이터 삭제
+        cursor.execute("DELETE FROM meta_data WHERE board_id = ?", (board_id,))
+        logger.info(f"[DELETE] ✓ meta_data 레코드 삭제")
+
+        # 3. boards 테이블에서 해당 보드 삭제
+        cursor.execute("DELETE FROM boards WHERE id = ?", (board_id,))
+        logger.info(f"[DELETE] ✓ boards 레코드 삭제")
+
+        # 4. 커밋
+        conn.commit()
+        logger.info(f"[DELETE] ✓ 트랜잭션 커밋 - 게시판 삭제 완료: board_id={board_id}")
+
+        return {"message": "Board deleted successfully", "board_id": board_id}
+
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"[DELETE] 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

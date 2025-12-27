@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+프로그램을 실행시켜서 수행 시키기 보다는 번호를 매기면서 한글로 로그를 달아서 성공적인 수행여부를 확인한다.
 
 ## Project Overview
 
