@@ -39,7 +39,7 @@
 - UI로 부터 json을 만든다.
 
 ```json
-  {
+{
   "id": null ,
   "name": "일지",
   "physical_table_name": "table_{board_id}",

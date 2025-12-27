@@ -24,7 +24,7 @@ class DBManager:
         """
         게시판 생성 로직:
         1. boards 테이블에 메타 정보 insert
-        2. meta_data 테이블에 컬럼 정의 insert
+        2. meta_data 테이블에 컬럼 정의 insert (설계 문서 준수)
         3. 실제 물리 테이블 create
         """
         try:
@@ -37,36 +37,54 @@ class DBManager:
                 (board_data.board.name, board_data.board.physical_table_name, board_data.board.note)
             )
             board_id = self.cursor.lastrowid
-            
-            # 2. Prepare columns metadata JSON
-            columns_json = board_data.columns.model_dump_json()
-            
-            # 3. Insert into meta_data
+
+            # 2. Prepare columns metadata JSON (설계 문서 형식 준수)
+            table_meta = {
+                "name": board_data.board.name,
+                "note": board_data.board.note,
+                "is_file_attach": getattr(board_data.board, 'is_file_attach', False),
+                "physical_table_name": board_data.board.physical_table_name,
+                "id": board_id,
+                "columns": [field.model_dump() for field in board_data.columns.fields]
+            }
+            table_meta_json = json.dumps(table_meta, ensure_ascii=False)
+
+            # 3. Insert into meta_data with name="table"
             self.cursor.execute(
                 """
                 INSERT INTO meta_data (board_id, name, meta, schema)
                 VALUES (?, ?, ?, ?)
                 """,
-                (board_id, "columns", columns_json, "v1")
+                (board_id, "table", table_meta_json, "v1")
             )
 
             # 4. Create Physical Table
             ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
             for field in board_data.columns.fields:
                 col_type = map_sqlite_type(field.data_type)
-                nullable = "" if field.required else " NULL"
-                ddl_columns.append(f"{field.name} {col_type}{nullable}")
-            
+                # comment가 없으면 label을 comment로 사용
+                col_comment = getattr(field, 'comment', None) or field.label
+                ddl_columns.append(f"{field.name} {col_type} -- {col_comment}")
+
             ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-            
+
             create_table_sql = f"CREATE TABLE {board_data.board.physical_table_name} ({', '.join(ddl_columns)})"
-            
+
             logger.info(f"🛠 Executing DDL: {create_table_sql}")
             self.cursor.execute(create_table_sql)
-            
+
+            # 5. 테이블 검증 로깅
+            cursor = self.conn.cursor()
+            cursor.execute(f"PRAGMA table_info({board_data.board.physical_table_name})")
+            table_info = cursor.fetchall()
+            logger.info(f"✅ Table '{board_data.board.physical_table_name}' created successfully")
+            logger.info(f"📋 Table structure (PRAGMA table_info):")
+            for col in table_info:
+                logger.info(f"   - {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
+
             self.conn.commit()
-            
+
             logger.info(f"✅ Board created: {board_data.board.name} (ID: {board_id})")
             return BoardResponse(board_id=board_id, message="success")
 
@@ -79,14 +97,16 @@ class DBManager:
         """게시판 컬럼 메타데이터 조회"""
         self.cursor.execute(
             "SELECT meta FROM meta_data WHERE board_id = ? AND name = ?",
-            (board_id, "columns")
+            (board_id, "table")
         )
         row = self.cursor.fetchone()
         if not row:
             return None
 
         try:
-            return json.loads(row[0])
+            meta = json.loads(row[0])
+            # 설계 문서에 맞게 columns 배열 추출
+            return {"fields": meta.get("columns", [])}
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON in metadata")
 

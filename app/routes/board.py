@@ -18,14 +18,40 @@ router = APIRouter(prefix="/boards", tags=["boards"])
 
 # Step 1: 테이블 생성 (컬럼 정의)
 @router.get("/new/step1", response_class=HTMLResponse)
-async def wizard_step1_form(request: Request, user: User = Depends(get_current_user_from_cookie)):
-    """Step 1: 기본 정보 및 컬럼 정의 페이지"""
+async def wizard_step1_form(
+    request: Request,
+    board_id: Optional[int] = None,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """Step 1: 기본 정보 및 컬럼 정의 페이지 (신규 생성 또는 기존 수정)"""
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
+    board_info = None
+    columns_data = None
+    board_meta = None
+
+    # board_id가 있으면 기존 데이터 조회
+    if board_id:
+        db_manager = DBManager(conn)
+        board_info = db_manager.get_board_info(board_id)
+        if not board_info:
+            return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
+
+        board_meta = db_manager.get_metadata(board_id, "table") or {}
+        columns_data = board_meta.get("columns", [])
+
     return request.app.state.templates.TemplateResponse(
         "board/wizard_step1.html",
-        {"request": request, "user": user}
+        {
+            "request": request,
+            "user": user,
+            "board": board_info,
+            "board_meta": board_meta,
+            "columns": columns_data,
+            "board_id": board_id
+        }
     )
 
 @router.post("/new/step1")
@@ -33,58 +59,184 @@ async def wizard_step1_submit(
     request: Request,
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
-    """Step 1: Board 생성 및 컬럼 메타데이터 저장"""
+    """Step 1: Board 생성 및 컬럼 메타데이터 저장 (신규 생성 또는 기존 수정)"""
     try:
         form_data = await request.json()
-        board_name = form_data.get("board_name")
-        board_note = form_data.get("board_note", "")
+        board_id = form_data.get("board_id")  # 수정 모드인지 신규 모드인지 판단
+        board_name = form_data.get("name")
+        board_note = form_data.get("note", "")
+        is_file_attach = form_data.get("is_file_attach", False)
         columns_data = form_data.get("columns", [])
 
-        logger.info(f"🚀 Step 1 Submit: Creating board '{board_name}' with {len(columns_data)} columns")
-
-        # DBManager를 사용해 board 생성
         db_manager = DBManager(conn)
-
-        # 1. Board 생성
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO boards (name, note) VALUES (?, ?)",
-            (board_name, board_note)
-        )
-        board_id = cursor.lastrowid
 
-        # 2. 컬럼 메타데이터 저장
-        columns_meta = {"fields": columns_data}
-        db_manager.save_metadata(board_id, "columns", columns_meta)
+        # ===== 신규 생성 모드 =====
+        if not board_id:
+            logger.info(f"🚀 Step 1 Submit: Creating NEW board '{board_name}' with {len(columns_data)} columns")
 
-        # 3. 물리 테이블 생성
-        physical_table_name = f"table_{board_id}"
+            # 1. 최대 ID를 구해서 다음 ID 계산
+            cursor.execute("SELECT MAX(id) FROM boards")
+            result = cursor.fetchone()
+            next_board_id = (result[0] or 0) + 1
+            physical_table_name = f"table_{next_board_id}"
 
-        # SQL 생성
-        from app.utils.db_manager import map_sqlite_type
-        ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
-        for field in columns_data:
-            col_type = map_sqlite_type(field.get("data_type", "string"))
-            nullable = "" if field.get("required", True) else " NULL"
-            ddl_columns.append(f"{field['name']} {col_type}{nullable}")
+            # 2. Board 신규 생성 (physical_table_name 포함)
+            cursor.execute(
+                "INSERT INTO boards (name, note, physical_table_name) VALUES (?, ?, ?)",
+                (board_name, board_note, physical_table_name)
+            )
+            board_id = cursor.lastrowid
 
-        ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-        ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            # 3. 컬럼명 자동 생성 및 메타데이터 준비 (설계 문서 준수)
+            columns_with_names = []
+            for idx, field in enumerate(columns_data, 1):
+                col_name = f"col{idx}"
+                col_data = {
+                    "label": field.get("label"),
+                    "data_type": field.get("data_type"),
+                    "name": col_name
+                }
 
-        create_table_sql = f"CREATE TABLE {physical_table_name} ({', '.join(ddl_columns)})"
-        logger.info(f"🛠 Creating physical table: {create_table_sql}")
-        cursor.execute(create_table_sql)
+                # comment는 선택사항
+                if field.get("comment"):
+                    col_data["comment"] = field.get("comment")
 
-        # 4. Board의 physical_table_name 업데이트
-        cursor.execute(
-            "UPDATE boards SET physical_table_name = ? WHERE id = ?",
-            (physical_table_name, board_id)
-        )
-        conn.commit()
+                columns_with_names.append(col_data)
 
-        logger.info(f"✅ Board created: {board_name} (ID: {board_id})")
+            columns_meta = {
+                "name": board_name,
+                "note": board_note,
+                "is_file_attach": is_file_attach,
+                "physical_table_name": physical_table_name,
+                "id": board_id,
+                "columns": columns_with_names
+            }
+            db_manager.save_metadata(board_id, "table", columns_meta)
+
+            # 4. 물리 테이블 생성
+            from app.utils.db_manager import map_sqlite_type
+            ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
+            for field in columns_with_names:
+                col_type = map_sqlite_type(field.get("data_type", "string"))
+                col_name = field.get("name")
+                # comment가 없으면 label을 comment로 사용
+                col_comment = field.get("comment") or field.get("label")
+                ddl_columns.append(f"{col_name} {col_type} -- {col_comment}")
+
+            ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+
+            create_table_sql = f"CREATE TABLE {physical_table_name} ({', '.join(ddl_columns)})"
+            logger.info(f"🛠 Creating physical table: {create_table_sql}")
+            cursor.execute(create_table_sql)
+
+            # 5. 테이블 검증 로깅
+            cursor.execute(f"PRAGMA table_info({physical_table_name})")
+            table_info = cursor.fetchall()
+            logger.info(f"✅ Table '{physical_table_name}' created successfully")
+            logger.info(f"📋 Table structure (PRAGMA table_info):")
+            for col in table_info:
+                logger.info(f"   - {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
+
+            conn.commit()
+            logger.info(f"✅ Board created: {board_name} (ID: {board_id}, Table: {physical_table_name})")
+
+        # ===== 수정 모드 =====
+        else:
+            logger.info(f"🚀 Step 1 Submit: Updating board (ID: {board_id}) '{board_name}'")
+
+            # 1. 기존 Board 정보 조회
+            existing_board = db_manager.get_board_info(board_id)
+            if not existing_board:
+                raise HTTPException(status_code=404, detail="Board not found")
+
+            physical_table_name = existing_board["physical_table_name"]
+
+            # 2. Board 정보 UPDATE
+            cursor.execute(
+                "UPDATE boards SET name = ?, note = ? WHERE id = ?",
+                (board_name, board_note, board_id)
+            )
+
+            # 3. 컬럼명 자동 생성 및 메타데이터 준비
+            columns_with_names = []
+            for idx, field in enumerate(columns_data, 1):
+                col_name = f"col{idx}"
+                col_data = {
+                    "label": field.get("label"),
+                    "data_type": field.get("data_type"),
+                    "name": col_name
+                }
+
+                if field.get("comment"):
+                    col_data["comment"] = field.get("comment")
+
+                columns_with_names.append(col_data)
+
+            columns_meta = {
+                "name": board_name,
+                "note": board_note,
+                "is_file_attach": is_file_attach,
+                "physical_table_name": physical_table_name,
+                "id": board_id,
+                "columns": columns_with_names
+            }
+
+            # 4. 메타데이터 UPDATE (save_metadata는 UPSERT 처리)
+            db_manager.save_metadata(board_id, "table", columns_meta)
+
+            # 5. 물리 테이블 DROP -> CREATE (수정 모드는 항상 재생성)
+            logger.info(f"🔄 Updating table structure for board {board_id}...")
+
+            # 5-1. 기존 테이블에 데이터가 있는지 확인
+            cursor.execute(f"SELECT COUNT(*) FROM {physical_table_name}")
+            record_count = cursor.fetchone()[0]
+
+            if record_count > 0:
+                logger.warning(f"⚠️ Table {physical_table_name} has {record_count} existing record(s). Cannot modify structure.")
+                conn.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot modify table structure when {record_count} record(s) exist. Please delete all records first."
+                )
+
+            # 5-2. 기존 테이블 DROP
+            cursor.execute(f"DROP TABLE {physical_table_name}")
+            logger.info(f"🗑️ Dropped table {physical_table_name}")
+
+            # 5-3. 새 테이블 생성
+            from app.utils.db_manager import map_sqlite_type
+            ddl_columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT"]
+            for field in columns_with_names:
+                col_type = map_sqlite_type(field.get("data_type", "string"))
+                col_name = field.get("name")
+                col_comment = field.get("comment") or field.get("label")
+                ddl_columns.append(f"{col_name} {col_type} -- {col_comment}")
+
+            ddl_columns.append("created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+            ddl_columns.append("updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+
+            create_table_sql = f"CREATE TABLE {physical_table_name} ({', '.join(ddl_columns)})"
+            logger.info(f"🛠 Recreating physical table: {create_table_sql}")
+            cursor.execute(create_table_sql)
+
+            # 5-4. 테이블 검증
+            cursor.execute(f"PRAGMA table_info({physical_table_name})")
+            table_info = cursor.fetchall()
+            logger.info(f"✅ Table '{physical_table_name}' recreated successfully")
+            logger.info(f"📋 Table structure (PRAGMA table_info):")
+            for col in table_info:
+                logger.info(f"   - {col[1]}: {col[2]} (notnull={col[3]}, pk={col[5]})")
+
+            conn.commit()
+            logger.info(f"✅ Board updated: {board_name} (ID: {board_id}, Table: {physical_table_name})")
+
         return {"board_id": board_id, "redirect": f"/boards/new/step2/{board_id}"}
 
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         logger.error(f"❌ Error in Step 1: {e}")
@@ -108,7 +260,8 @@ async def wizard_step2_form(
     if not board_info:
         return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
 
-    columns_meta = db_manager.get_metadata(board_id, "columns") or {"fields": []}
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns_data = table_meta.get("columns", [])
     list_meta = db_manager.get_metadata(board_id, "list")
 
     return request.app.state.templates.TemplateResponse(
@@ -117,7 +270,7 @@ async def wizard_step2_form(
             "request": request,
             "user": user,
             "board": board_info,
-            "columns": columns_meta.get("fields", []),
+            "columns": columns_data,
             "list_config": list_meta
         }
     )
@@ -164,7 +317,8 @@ async def wizard_step3_form(
     if not board_info:
         return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
 
-    columns_meta = db_manager.get_metadata(board_id, "columns") or {"fields": []}
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns_data = table_meta.get("columns", [])
     create_meta = db_manager.get_metadata(board_id, "create")
 
     return request.app.state.templates.TemplateResponse(
@@ -173,7 +327,7 @@ async def wizard_step3_form(
             "request": request,
             "user": user,
             "board": board_info,
-            "columns": columns_meta.get("fields", []),
+            "columns": columns_data,
             "create_config": create_meta
         }
     )
@@ -220,7 +374,8 @@ async def wizard_step4_form(
     if not board_info:
         return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
 
-    columns_meta = db_manager.get_metadata(board_id, "columns") or {"fields": []}
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns_data = table_meta.get("columns", [])
     create_meta = db_manager.get_metadata(board_id, "create")
     edit_meta = db_manager.get_metadata(board_id, "edit")
 
@@ -230,7 +385,7 @@ async def wizard_step4_form(
             "request": request,
             "user": user,
             "board": board_info,
-            "columns": columns_meta.get("fields", []),
+            "columns": columns_data,
             "create_config": create_meta,
             "edit_config": edit_meta
         }

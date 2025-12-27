@@ -48,7 +48,7 @@
 - step1,2,3,4 는 json 파일을 만드는 UI를 제공해야한다.
 
 1. step1 -> submit -> board.md와 columns.md의 json을 만들어서 server로 보낸다.
-2. server에서는 create table table_{id} 을 한다. josn을 meta-data table에 name을 `table`, `columns` 2개의 레코드로 넣는다.
+2. server에서는 create table table_{id} 을 한다. josn을 meta-data table에 name을 `table` 1개의 레코드로 넣는다.
 3. step2 -> submit -> 만들어진 table_{id}을 보여줄 수 있는 meta json을 만들어서 server로 보낸다.
 4. server에서는 json을 name을 `list`로 레코드로 넣는다.
 5. step3 -> submit -> 만들어진 table_{id}를 어떻게 추가, 수정할 수 있는 html을 만드는지 지정하는 json을 만들어서 server에 보낸다.
@@ -71,19 +71,38 @@ create table if not exists meta_data(
 
 Step 1 → {table: {...}, columns: {fields: [...]}}
 
+- step1 submit json : wizard_step1.html에서 submit하는 json
 {
-  table: {
     name: "일지",
     note: "매일 작성하는 개인 일지",
-    is_file_attach: false
-  },
-  columns: {
-    fields: [
-      { label: "날짜", name: "ymd", data_type: "ymd", required: true },
-      { label: "제목", name: "title", data_type: "string", required: true }
+    is_file_attach: false,
+
+    columns: [
+        { label: "날짜", data_type: "ymd", comment:"기준일자"},
+        { label: "제목", data_type: "string", comment: "하루의 요약"}
     ]
-  }
 }
+- data_type은 dropdown으로 `문자열`(string),`문장`(text),`정수`(integer),`실수(소수점포함)`(real),`날짜`(ymd),`날짜시간`(datetime) 처리
+
+- step1 meta table json : meta_data 에 `table` 로 저장되는 json
+{
+    name: "일지",
+    note: "매일 작성하는 개인 일지",
+    is_file_attach: false,
+
+    "physical_table_name": "table_{board_id}",
+    "id" : 1
+    columns: [
+        { label: "날짜", data_type: "ymd", name: "col1"},
+        { label: "제목", data_type: "string" , name: "col2"}
+    ]
+}
+
+- submit 후의 검증
+  1. table desc을 log로 인쇄
+  2. table_1 이 만들어져야하며 comment는 일지로 기록되어야함.
+  3. table_1 은 `null`, `integer`,`real`, `text`의 데이터타입을 가지고 `col1`, `col2`...와 같이 만들어져야함.
+
 Step 2 → {list: {...}}
 
 {

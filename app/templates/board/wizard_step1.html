@@ -5,7 +5,10 @@
 {% block content %}
 {% include 'common/nav.html' %}
 
-<div class="p-8 w-4/5 mx-auto">
+<div class="p-8 w-4/5 mx-auto" id="appContainer"
+    data-board-id="{% if board_id %}{{ board_id }}{% endif %}"
+    data-columns='{% if columns %}{{ columns | tojson }}{% else %}[]{% endif %}'
+    data-board-meta='{% if board_meta %}{{ board_meta | tojson }}{% else %}{}{% endif %}'>
     <div class="space-y-8">
         <!-- Progress Indicator -->
         <div class="flex items-center justify-between">
@@ -20,34 +23,42 @@
             </div>
         </div>
 
+        <!-- 수정 모드 표시 -->
+        {% if board %}
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+            <strong>수정 모드:</strong> 기존 기록물 정보를 수정하고 있습니다. (기록물 ID: {{ board.id }})
+        </div>
+        {% endif %}
+
         <!-- Board Info Section -->
         <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
             <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">기본 정보</h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-4">
                 <div>
                     <label class="block text-gray-700 font-medium mb-2">
                         기록물 이름 <span class="text-red-500">*</span>
                     </label>
                     <input type="text" id="boardName"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                        placeholder="예: 일기, 키보드 수집, 혈압 기록">
+                        placeholder="예: 일기, 키보드 수집, 혈압 기록"
+                        value="{% if board %}{{ board.name }}{% endif %}">
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2">
-                        카테고리 <span class="text-gray-400 text-sm">(선택)</span>
-                    </label>
-                    <input type="text" id="boardCategory"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                        placeholder="예: 개인, 작업, 취미">
-                </div>
-                <div class="md:col-span-2">
                     <label class="block text-gray-700 font-medium mb-2">
                         설명 <span class="text-gray-400 text-sm">(선택)</span>
                     </label>
                     <textarea id="boardNote"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-vertical"
-                        rows="3" placeholder="이 기록물에 대한 설명을 입력하세요"></textarea>
+                        rows="3" placeholder="이 기록물에 대한 설명을 입력하세요">{% if board %}{{ board.note }}{% endif %}</textarea>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="isFileAttach"
+                        class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        {% if board_meta and board_meta.is_file_attach %}checked{% endif %}>
+                    <label for="isFileAttach" class="ml-2 text-gray-700 font-medium cursor-pointer">
+                        파일 첨부 허용
+                    </label>
                 </div>
             </div>
         </div>
@@ -71,10 +82,9 @@
                         <tr class="border-b border-gray-200">
                             <th class="py-3 px-4 text-left font-semibold text-gray-700 w-12">번호</th>
                             <th class="py-3 px-4 text-left font-semibold text-gray-700">라벨 (한글) <span class="text-red-500">*</span></th>
-                            <th class="py-3 px-4 text-left font-semibold text-gray-700">이름 (영문) <span class="text-red-500">*</span></th>
                             <th class="py-3 px-4 text-left font-semibold text-gray-700">데이터 타입</th>
-                            <th class="py-3 px-4 text-center font-semibold text-gray-700 w-20">필수</th>
-                            <th class="py-3 px-4 text-center font-semibold text-gray-700 w-20">동작</th>
+                            <th class="py-3 px-4 text-left font-semibold text-gray-700">설명 (선택)</th>
+                            <th class="py-3 px-4 text-center font-semibold text-gray-700 w-32">동작</th>
                         </tr>
                     </thead>
                     <tbody id="columnsBody" class="divide-y divide-gray-100">
@@ -86,13 +96,13 @@
             <div class="bg-gray-50 p-4 rounded-lg mb-6 text-sm text-gray-600">
                 <p class="font-semibold mb-2">데이터 타입 설명:</p>
                 <ul class="space-y-1 text-xs">
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">ymd</span> - 날짜 (YYYY-MM-DD)</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">datetime</span> - 날짜/시간</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">string</span> - 문자 (한 줄)</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">text</span> - 긴 텍스트</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">integer</span> - 정수</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">float</span> - 소수</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">boolean</span> - 참/거짓</li>
+                    <li><span class="font-semibold">문자열</span> - 짧은 한 줄의 텍스트 (최대 255자)</li>
+                    <li><span class="font-semibold">문장</span> - 긴 여러 줄의 텍스트</li>
+                    <li><span class="font-semibold">정수</span> - 소수점이 없는 숫자</li>
+                    <li><span class="font-semibold">실수(소수점포함)</span> - 소수점이 있는 숫자</li>
+                    <li><span class="font-semibold">참/거짓</span> - 참(true) 또는 거짓(false)</li>
+                    <li><span class="font-semibold">날짜</span> - YYYY-MM-DD 형식의 날짜</li>
+                    <li><span class="font-semibold">날짜시간</span> - 날짜와 시간을 포함한 데이터</li>
                 </ul>
             </div>
         </div>
@@ -113,39 +123,43 @@
 <script>
 const wizardStep1 = {
     columnCount: 0,
+    boardId: null,
 
-    addColumn() {
+    addColumn(data = null) {
         this.columnCount++;
         const tbody = document.getElementById('columnsBody');
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
         row.dataset.columnIndex = this.columnCount;
+
+        // 데이터가 있으면 기존 값으로 채우기
+        const label = data ? data.label : '';
+        const dataType = data ? data.data_type : 'string';
+        const comment = data ? (data.comment || '') : '';
+
         row.innerHTML = `
             <td class="py-3 px-4 text-gray-500">${this.columnCount}</td>
             <td class="py-3 px-4">
-                <input type="text" class="col-label w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 제목">
-            </td>
-            <td class="py-3 px-4">
-                <input type="text" class="col-name w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: title">
+                <input type="text" class="col-label w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 제목" value="${label}">
             </td>
             <td class="py-3 px-4">
                 <select class="col-type w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
-                    <option value="string">string</option>
-                    <option value="text">text</option>
-                    <option value="integer">integer</option>
-                    <option value="float">float</option>
-                    <option value="boolean">boolean</option>
-                    <option value="ymd">ymd</option>
-                    <option value="datetime">datetime</option>
+                    <option value="string" ${dataType === 'string' ? 'selected' : ''}>문자열</option>
+                    <option value="text" ${dataType === 'text' ? 'selected' : ''}>문장</option>
+                    <option value="integer" ${dataType === 'integer' ? 'selected' : ''}>정수</option>
+                    <option value="float" ${dataType === 'float' ? 'selected' : ''}>실수(소수점포함)</option>
+                    <option value="boolean" ${dataType === 'boolean' ? 'selected' : ''}>참/거짓</option>
+                    <option value="ymd" ${dataType === 'ymd' ? 'selected' : ''}>날짜</option>
+                    <option value="datetime" ${dataType === 'datetime' ? 'selected' : ''}>날짜시간</option>
                 </select>
             </td>
-            <td class="py-3 px-4 text-center">
-                <input type="checkbox" class="col-required w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" checked>
+            <td class="py-3 px-4">
+                <input type="text" class="col-comment w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 기준일자" value="${comment}">
             </td>
-            <td class="py-3 px-4 text-center">
-                <button onclick="wizardStep1.removeColumn(${this.columnCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm">
-                    삭제
-                </button>
+            <td class="py-3 px-4 text-center space-x-1 flex justify-center">
+                <button type="button" onclick="wizardStep1.moveColumnUp(${this.columnCount})" class="px-2 py-1 text-indigo-600 hover:text-indigo-700 font-semibold text-sm hover:bg-indigo-50 rounded" title="위로">↑</button>
+                <button type="button" onclick="wizardStep1.moveColumnDown(${this.columnCount})" class="px-2 py-1 text-indigo-600 hover:text-indigo-700 font-semibold text-sm hover:bg-indigo-50 rounded" title="아래로">↓</button>
+                <button type="button" onclick="wizardStep1.removeColumn(${this.columnCount})" class="px-2 py-1 text-red-600 hover:text-red-700 font-semibold text-sm hover:bg-red-50 rounded" title="삭제">✕</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -158,9 +172,24 @@ const wizardStep1 = {
         }
     },
 
+    moveColumnUp(index) {
+        const row = document.querySelector(`tr[data-column-index="${index}"]`);
+        if (row && row.previousElementSibling) {
+            row.parentNode.insertBefore(row, row.previousElementSibling);
+        }
+    },
+
+    moveColumnDown(index) {
+        const row = document.querySelector(`tr[data-column-index="${index}"]`);
+        if (row && row.nextElementSibling) {
+            row.parentNode.insertBefore(row.nextElementSibling, row);
+        }
+    },
+
     getFormData() {
         const boardName = document.getElementById('boardName').value.trim();
         const boardNote = document.getElementById('boardNote').value.trim();
+        const isFileAttach = document.getElementById('isFileAttach').checked;
 
         if (!boardName) {
             alert('기록물 이름을 입력하세요.');
@@ -170,20 +199,24 @@ const wizardStep1 = {
         const columns = [];
         document.querySelectorAll('#columnsBody tr').forEach(row => {
             const label = row.querySelector('.col-label').value.trim();
-            const name = row.querySelector('.col-name').value.trim();
             const dataType = row.querySelector('.col-type').value;
-            const required = row.querySelector('.col-required').checked;
+            const comment = row.querySelector('.col-comment').value.trim();
 
-            if (!label || !name) {
-                throw new Error('모든 항목의 라벨과 이름을 입력하세요.');
+            if (!label) {
+                throw new Error('모든 항목의 라벨을 입력하세요.');
             }
 
-            columns.push({
+            const columnData = {
                 label,
-                name,
-                data_type: dataType,
-                required
-            });
+                data_type: dataType
+            };
+
+            // comment는 선택사항이므로 있을 때만 추가
+            if (comment) {
+                columnData.comment = comment;
+            }
+
+            columns.push(columnData);
         });
 
         if (columns.length === 0) {
@@ -191,16 +224,19 @@ const wizardStep1 = {
             return null;
         }
 
-        return {
-            table: {
-                name: boardName,
-                note: boardNote,
-                is_file_attach: false
-            },
-            columns: {
-                fields: columns
-            }
+        const result = {
+            name: boardName,
+            note: boardNote,
+            is_file_attach: isFileAttach,
+            columns: columns
         };
+
+        // 수정 모드인 경우 board_id 포함
+        if (this.boardId) {
+            result.board_id = this.boardId;
+        }
+
+        return result;
     },
 
     async submit() {
@@ -228,9 +264,26 @@ const wizardStep1 = {
     }
 };
 
-// Add first column on load
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    wizardStep1.addColumn();
+    const container = document.getElementById('appContainer');
+    const boardId = container.dataset.boardId;
+    const columnsData = JSON.parse(container.dataset.columns || '[]');
+    const boardMeta = JSON.parse(container.dataset.boardMeta || '{}');
+
+    // 기존 데이터가 있으면 boardId 설정
+    if (boardId) {
+        wizardStep1.boardId = parseInt(boardId);
+    }
+
+    // 기존 컬럼 데이터가 있으면 로드, 없으면 빈 컬럼 하나 추가
+    if (columnsData && columnsData.length > 0) {
+        columnsData.forEach(colData => {
+            wizardStep1.addColumn(colData);
+        });
+    } else {
+        wizardStep1.addColumn();
+    }
 });
 </script>
 {% endblock %}
