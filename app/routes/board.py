@@ -350,17 +350,55 @@ async def wizard_step2_submit(
         form_data = await request.json()
         list_config = form_data.get("list_config", {})
 
-        logger.info(f"🚀 Step 2 Submit: Saving list config for board {board_id}")
+        logger.info(f"[STEP2-1] 🚀 Step 2 Submit 시작 - board_id={board_id}")
+        logger.info(f"[STEP2-2] 전송된 form_data 구조: {list(form_data.keys())}")
+
+        # 목록 설정 상세 로깅
+        logger.info(f"[STEP2-3] list_config 받음:")
+        logger.info(f"     - view_mode: {list_config.get('view_mode', 'N/A')}")
+        logger.info(f"     - display_columns: {len(list_config.get('display_columns', []))}개")
+        if list_config.get('display_columns'):
+            for idx, col in enumerate(list_config.get('display_columns', [])):
+                logger.info(f"       [{idx+1}] {col.get('name')} ({col.get('label')})")
+
+        pagination = list_config.get('pagination', {})
+        logger.info(f"     - pagination.enabled: {pagination.get('enabled')}")
+        logger.info(f"     - pagination.page_size: {pagination.get('page_size')}")
+
+        sort = list_config.get('default_sort', [])
+        if sort:
+            logger.info(f"     - default_sort: {sort[0].get('column')} ({sort[0].get('order')})")
+
+        search = list_config.get('search', {})
+        logger.info(f"     - search.enabled: {search.get('enabled')}")
+        logger.info(f"     - search.simple_fields: {search.get('simple_fields', [])}")
+
+        logger.info(f"[STEP2-4] 데이터베이스에 저장 중...")
+        import json
+        logger.info(f"[STEP2-5] 저장할 JSON (pretty):\n{json.dumps(list_config, indent=2, ensure_ascii=False)}")
 
         db_manager = DBManager(conn)
         db_manager.save_metadata(board_id, "list", list_config)
 
-        logger.info(f"✅ List config saved for board {board_id}")
+        logger.info(f"[STEP2-6] ✓ 데이터베이스에 저장 완료")
+        logger.info(f"[STEP2-7] 메타데이터 검증: board_id={board_id}, type='list'")
+
+        # 저장된 데이터 재확인
+        saved_data = db_manager.get_metadata(board_id, "list")
+        if saved_data:
+            logger.info(f"[STEP2-8] ✅ 저장된 데이터 검증 완료: {len(saved_data.get('display_columns', []))}개 컬럼")
+        else:
+            logger.warn(f"[STEP2-8] ⚠️ 저장된 데이터 검증 실패: None 반환됨")
+
+        logger.info(f"[STEP2-9] Step 3으로 리다이렉트 중...")
         return {"redirect": f"/boards/new/step3/{board_id}"}
 
     except Exception as e:
         conn.rollback()
-        logger.error(f"❌ Error in Step 2: {e}")
+        logger.error(f"[STEP2-ERROR] 예외 발생: {type(e).__name__}")
+        logger.error(f"[STEP2-ERROR] 메시지: {str(e)}")
+        import traceback
+        logger.error(f"[STEP2-ERROR] 스택 트레이스:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Step 3: 입력폼 설정
@@ -383,7 +421,7 @@ async def wizard_step3_form(
 
     table_meta = db_manager.get_metadata(board_id, "table") or {}
     columns_data = table_meta.get("columns", [])
-    create_meta = db_manager.get_metadata(board_id, "create")
+    create_edit_meta = db_manager.get_metadata(board_id, "create_edit")
 
     return request.app.state.templates.TemplateResponse(
         "board/wizard/step3.html",
@@ -392,7 +430,7 @@ async def wizard_step3_form(
             "user": user,
             "board": board_info,
             "columns": columns_data,
-            "create_config": create_meta
+            "create_edit_config": create_edit_meta
         }
     )
 
@@ -405,22 +443,75 @@ async def wizard_step3_submit(
     """Step 3: 입력 설정 저장"""
     try:
         form_data = await request.json()
-        create_config = form_data.get("create_config", {})
+        create_edit = form_data.get("create_edit", {})
 
-        logger.info(f"🚀 Step 3 Submit: Saving create config for board {board_id}")
+        logger.info(f"[STEP3-1] 🚀 Step 3 Submit 시작 - board_id={board_id}")
+        logger.info(f"[STEP3-2] 전송된 form_data 구조: {list(form_data.keys())}")
+
+        # 입력폼 설정 상세 로깅
+        fields = create_edit.get("fields", [])
+        logger.info(f"[STEP3-3] create_edit 받음: {len(fields)}개 필드")
+
+        for idx, field in enumerate(fields, 1):
+            logger.info(f"     [{idx}] 필드명: {field.get('name')}")
+            logger.info(f"         - label: {field.get('label')}")
+            logger.info(f"         - data_type: {field.get('data_type')}")
+            logger.info(f"         - element: {field.get('element')}")
+            logger.info(f"         - element_type: {field.get('element_type')}")
+            logger.info(f"         - required: {field.get('required')}")
+            logger.info(f"         - order: {field.get('order')}")
+
+            # 조건부 필드 로깅
+            if 'width' in field:
+                logger.info(f"         - width: {field.get('width')}")
+            if 'inline_group' in field:
+                logger.info(f"         - inline_group: {field.get('inline_group')}")
+            if 'default_value' in field:
+                logger.info(f"         - default_value: {field.get('default_value')}")
+            if 'min_value' in field:
+                logger.info(f"         - min_value: {field.get('min_value')}")
+            if 'max_value' in field:
+                logger.info(f"         - max_value: {field.get('max_value')}")
+            if 'help_text' in field:
+                logger.info(f"         - help_text: {field.get('help_text')}")
+            if 'options' in field:
+                options = field.get('options', [])
+                logger.info(f"         - options: {len(options)}개")
+                for opt in options:
+                    logger.info(f"           • {opt.get('value')} = {opt.get('label')}")
+
+        logger.info(f"[STEP3-4] 데이터베이스에 저장 중...")
+        import json
+        logger.info(f"[STEP3-5] 저장할 JSON (pretty):\n{json.dumps(create_edit, indent=2, ensure_ascii=False)}")
 
         db_manager = DBManager(conn)
-        db_manager.save_metadata(board_id, "create", create_config)
+        db_manager.save_metadata(board_id, "create_edit", create_edit)
 
-        logger.info(f"✅ Create config saved for board {board_id}")
+        logger.info(f"[STEP3-6] ✓ 데이터베이스에 저장 완료")
+        logger.info(f"[STEP3-7] 메타데이터 검증: board_id={board_id}, type='create_edit'")
+
+        # 저장된 데이터 재확인
+        saved_data = db_manager.get_metadata(board_id, "create_edit")
+        if saved_data:
+            saved_fields = saved_data.get("fields", [])
+            logger.info(f"[STEP3-8] ✅ 저장된 데이터 검증 완료: {len(saved_fields)}개 필드")
+            for idx, field in enumerate(saved_fields, 1):
+                logger.info(f"       [{idx}] {field.get('name')} ({field.get('label')})")
+        else:
+            logger.warn(f"[STEP3-8] ⚠️ 저장된 데이터 검증 실패: None 반환됨")
+
+        logger.info(f"[STEP3-9] Step 4로 리다이렉트 중...")
         return {"redirect": f"/boards/new/step4/{board_id}"}
 
     except Exception as e:
         conn.rollback()
-        logger.error(f"❌ Error in Step 3: {e}")
+        logger.error(f"[STEP3-ERROR] 예외 발생: {type(e).__name__}")
+        logger.error(f"[STEP3-ERROR] 메시지: {str(e)}")
+        import traceback
+        logger.error(f"[STEP3-ERROR] 스택 트레이스:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Step 4: 수정폼 설정
+# Step 4: 상세보기 설정
 @router.get("/new/step4/{board_id}", response_class=HTMLResponse)
 async def wizard_step4_form(
     request: Request,
@@ -428,7 +519,7 @@ async def wizard_step4_form(
     user: User = Depends(get_current_user_from_cookie),
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
-    """Step 4: 수정 화면 설정"""
+    """Step 4: 상세보기(View) 설정"""
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
@@ -440,8 +531,8 @@ async def wizard_step4_form(
 
     table_meta = db_manager.get_metadata(board_id, "table") or {}
     columns_data = table_meta.get("columns", [])
-    create_meta = db_manager.get_metadata(board_id, "create")
-    edit_meta = db_manager.get_metadata(board_id, "edit")
+    create_config = db_manager.get_metadata(board_id, "create_edit")
+    view_meta = db_manager.get_metadata(board_id, "view")
 
     return request.app.state.templates.TemplateResponse(
         "board/wizard/step4.html",
@@ -450,8 +541,8 @@ async def wizard_step4_form(
             "user": user,
             "board": board_info,
             "columns": columns_data,
-            "create_config": create_meta,
-            "edit_config": edit_meta
+            "create_config": create_config,
+            "view_config": view_meta
         }
     )
 
@@ -461,22 +552,107 @@ async def wizard_step4_submit(
     request: Request,
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
-    """Step 4: 수정 설정 저장"""
+    """Step 4: 상세보기(View) 설정 저장"""
     try:
         form_data = await request.json()
-        edit_config = form_data.get("edit_config", {})
+        view_config = form_data.get("view", {})
 
-        logger.info(f"🚀 Step 4 Submit: Saving edit config for board {board_id}")
+        logger.info(f"[STEP4-1] 🚀 Step 4 Submit 시작 - board_id={board_id}")
+        logger.info(f"[STEP4-2] 전송된 form_data 구조: {list(form_data.keys())}")
+
+        # 표시 필드 상세 로깅
+        display_fields = view_config.get("display_fields", [])
+        logger.info(f"[STEP4-3] view 설정 받음: {len(display_fields)}개 필드")
+
+        for idx, field in enumerate(display_fields, 1):
+            logger.info(f"     [{idx}] 필드명: {field.get('name')}")
+            logger.info(f"         - label: {field.get('label')}")
+            logger.info(f"         - display_type: {field.get('display_type')}")
+            logger.info(f"         - order: {field.get('order')}")
+
+            # 조건부 필드 로깅
+            if 'width' in field:
+                logger.info(f"         - width: {field.get('width')}")
+            if 'inline_group' in field:
+                logger.info(f"         - inline_group: {field.get('inline_group')}")
+            if 'full_width' in field:
+                logger.info(f"         - full_width: {field.get('full_width')}")
+            if 'hide_label' in field:
+                logger.info(f"         - hide_label: {field.get('hide_label')}")
+            if 'style_class' in field:
+                logger.info(f"         - style_class: {field.get('style_class')}")
+            if 'section' in field:
+                logger.info(f"         - section: {field.get('section')}")
+            if 'section_title' in field:
+                logger.info(f"         - section_title: {field.get('section_title')}")
+
+            # Display type 별 옵션 로깅
+            display_type = field.get('display_type')
+            if display_type == 'date' and 'format' in field:
+                logger.info(f"         - format: {field.get('format')}")
+            elif display_type == 'datetime':
+                if 'format' in field:
+                    logger.info(f"         - format: {field.get('format')}")
+                if 'relative' in field:
+                    logger.info(f"         - relative: {field.get('relative')}")
+            elif display_type == 'stars':
+                if 'max_stars' in field:
+                    logger.info(f"         - max_stars: {field.get('max_stars')}")
+                if 'show_number' in field:
+                    logger.info(f"         - show_number: {field.get('show_number')}")
+            elif display_type == 'currency':
+                if 'currency_code' in field:
+                    logger.info(f"         - currency_code: {field.get('currency_code')}")
+                if 'decimal_places' in field:
+                    logger.info(f"         - decimal_places: {field.get('decimal_places')}")
+                if 'thousands_separator' in field:
+                    logger.info(f"         - thousands_separator: {field.get('thousands_separator')}")
+            elif display_type == 'boolean':
+                if 'true_text' in field:
+                    logger.info(f"         - true_text: {field.get('true_text')}")
+                if 'false_text' in field:
+                    logger.info(f"         - false_text: {field.get('false_text')}")
+                if 'show_icon' in field:
+                    logger.info(f"         - show_icon: {field.get('show_icon')}")
+            elif display_type == 'badge' and 'badge_color_map' in field:
+                logger.info(f"         - badge_color_map: {field.get('badge_color_map')}")
+            elif display_type == 'list':
+                if 'display_as' in field:
+                    logger.info(f"         - display_as: {field.get('display_as')}")
+                if 'separator' in field:
+                    logger.info(f"         - separator: {field.get('separator')}")
+                if 'hide_if_empty' in field:
+                    logger.info(f"         - hide_if_empty: {field.get('hide_if_empty')}")
+
+        logger.info(f"[STEP4-4] 데이터베이스에 저장 중...")
+        import json
+        logger.info(f"[STEP4-5] 저장할 JSON (pretty):\n{json.dumps(view_config, indent=2, ensure_ascii=False)}")
 
         db_manager = DBManager(conn)
-        db_manager.save_metadata(board_id, "edit", edit_config)
+        db_manager.save_metadata(board_id, "view", view_config)
 
-        logger.info(f"✅ Edit config saved for board {board_id}")
+        logger.info(f"[STEP4-6] ✓ 데이터베이스에 저장 완료")
+        logger.info(f"[STEP4-7] 메타데이터 검증: board_id={board_id}, type='view'")
+
+        # 저장된 데이터 재확인
+        saved_data = db_manager.get_metadata(board_id, "view")
+        if saved_data:
+            saved_fields = saved_data.get("display_fields", [])
+            logger.info(f"[STEP4-8] ✅ 저장된 데이터 검증 완료: {len(saved_fields)}개 필드")
+            for idx, field in enumerate(saved_fields, 1):
+                logger.info(f"       [{idx}] {field.get('name')} ({field.get('label')})")
+        else:
+            logger.warn(f"[STEP4-8] ⚠️ 저장된 데이터 검증 실패: None 반환됨")
+
+        logger.info(f"[STEP4-9] 마무리 페이지로 리다이렉트 중...")
         return {"redirect": f"/boards/new/finish/{board_id}"}
 
     except Exception as e:
         conn.rollback()
-        logger.error(f"❌ Error in Step 4: {e}")
+        logger.error(f"[STEP4-ERROR] 예외 발생: {type(e).__name__}")
+        logger.error(f"[STEP4-ERROR] 메시지: {str(e)}")
+        import traceback
+        logger.error(f"[STEP4-ERROR] 스택 트레이스:\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Finish: 완료 확인

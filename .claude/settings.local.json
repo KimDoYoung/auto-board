@@ -16,7 +16,8 @@
       "Bash(uv sync:*)",
       "Bash(python -m pip:*)",
       "Bash(python -m uvicorn:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(python:*)"
     ]
   }
 }
