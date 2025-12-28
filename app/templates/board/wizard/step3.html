@@ -5,13 +5,13 @@
 {% block content %}
 {% include 'common/nav.html' %}
 
-<div class="p-8 max-w-4xl mx-auto w-full">
+<div class="p-8 max-w-5xl mx-auto w-full">
     <div class="space-y-8">
         <!-- Progress Indicator -->
         <div class="flex items-center justify-between">
             <div class="flex-1">
                 <div class="flex justify-between mb-2">
-                    <span class="text-sm font-medium text-gray-700">단계 3/5: 입력폼/수정 설정</span>
+                    <span class="text-sm font-medium text-gray-700">단계 3/5: 입력폼 설정</span>
                     <span class="text-sm text-gray-500">60%</span>
                 </div>
                 <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -29,32 +29,24 @@
 
         <!-- Form Configuration -->
         <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
-            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">입력폼 설정 (신규 기록 작성)</h2>
+            <h2 class="text-2xl font-bold text-[#1a1a2e] mb-6 border-b pb-4">입력폼 설정</h2>
 
-            <div class="space-y-6 mb-8" id="formSections">
-                <!-- Default section will be created by JS -->
+            <div class="space-y-4 mb-8" id="fieldsContainer">
+                <!-- Fields will be added dynamically -->
             </div>
 
-            <!-- Add Section Button -->
-            <button onclick="wizardStep3.addSection()"
-                class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2 mb-8">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                섹션 추가
-            </button>
-
-            <!-- Form Field Reference -->
-            <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 space-y-2">
-                <p class="font-semibold">입력 필드 타입:</p>
-                <ul class="text-xs grid grid-cols-2 gap-2">
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">text</span> - 한 줄 입력</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">textarea</span> - 여러 줄 입력</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">number</span> - 숫자</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">date</span> - 날짜</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">select</span> - 선택 드롭다운</li>
-                    <li><span class="font-mono bg-white px-2 py-1 rounded">checkbox</span> - 체크박스</li>
-                </ul>
+            <!-- Add Field Selector -->
+            <div class="flex gap-2 items-end">
+                <div class="flex-1">
+                    <label class="block text-gray-700 font-medium text-sm mb-2">필드 추가</label>
+                    <select id="fieldSelector" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                        <option value="">-- 추가할 필드 선택 --</option>
+                    </select>
+                </div>
+                <button type="button" onclick="wizardStep3.addSelectedField()"
+                    class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors">
+                    추가
+                </button>
             </div>
         </div>
 
@@ -64,7 +56,7 @@
                 class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
                 이전 단계
             </a>
-            <button onclick="wizardStep3.submit()"
+            <button type="button" onclick="wizardStep3.submit()"
                 class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
                 다음 단계 (수정폼 설정)
             </button>
@@ -73,159 +65,360 @@
 </div>
 
 <script>
+const allColumns = {{ columns | tojson }};
+const createEditConfig = {{ create_edit_config | tojson if create_edit_config else 'null' }};
+
+// 데이터 타입 한글 변환
+const dataTypeLabels = {
+    'string': '문자열',
+    'text': '문장',
+    'integer': '정수',
+    'float': '실수(소수점포함)',
+    'boolean': '참/거짓',
+    'ymd': '날짜',
+    'datetime': '날짜시간'
+};
+
 const wizardStep3 = {
-    sectionCount: 0,
-    fieldCount: {},
+    fieldCount: 0,
 
-    addSection() {
-        this.sectionCount++;
-        const container = document.getElementById('formSections');
+    addField(columnName) {
+        this.fieldCount++;
+        const container = document.getElementById('fieldsContainer');
 
-        const section = document.createElement('div');
-        section.className = 'bg-gray-50 rounded-lg p-6 space-y-4 border border-gray-200';
-        section.dataset.sectionIndex = this.sectionCount;
-
-        section.innerHTML = `
-            <div class="flex justify-between items-center">
-                <div class="flex-1">
-                    <label class="block text-gray-700 font-medium text-sm mb-2">섹션 제목 (선택)</label>
-                    <input type="text" class="section-title w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 기본 정보, 추가 정보">
-                </div>
-                <button onclick="wizardStep3.removeSection(${this.sectionCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm mt-6">
-                    섹션 삭제
-                </button>
-            </div>
-
-            <div class="space-y-3" data-section-fields="${this.sectionCount}">
-                <!-- Fields will be added here -->
-            </div>
-
-            <button onclick="wizardStep3.addField(${this.sectionCount})"
-                class="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                필드 추가
-            </button>
-        `;
-
-        container.appendChild(section);
-        this.fieldCount[this.sectionCount] = 0;
-    },
-
-    addField(sectionIndex) {
-        this.fieldCount[sectionIndex]++;
-        const fieldsContainer = document.querySelector(`[data-section-fields="${sectionIndex}"]`);
+        // 컬럼 정보 찾기
+        const columnInfo = allColumns.find(col => col.name === columnName);
+        if (!columnInfo) return;
 
         const field = document.createElement('div');
-        field.className = 'bg-white p-4 rounded-lg border border-gray-200 space-y-3';
-        field.dataset.fieldIndex = this.fieldCount[sectionIndex];
+        field.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3 cursor-move';
+        field.dataset.fieldIndex = this.fieldCount;
+        field.dataset.columnName = columnName;
 
+        const fieldIndex = this.fieldCount;
         field.innerHTML = `
-            <div class="grid grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">필드명</label>
-                    <input type="text" class="field-name w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" readonly>
+            <div class="flex justify-between items-start gap-3">
+                <div class="flex gap-2 items-center flex-shrink-0 mt-1">
+                    <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                    </svg>
                 </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">라벨</label>
-                    <input type="text" class="field-label w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 제목">
+                <div class="flex-1">
+                    <div class="flex gap-3 items-center">
+                        <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">${columnInfo.label}</span>
+                        <span class="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">${dataTypeLabels[columnInfo.data_type] || columnInfo.data_type}</span>
+                        <input type="hidden" class="field-name" value="${columnName}">
+                        <input type="hidden" class="field-data-type" value="${columnInfo.data_type}">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">입력 타입</label>
-                    <select class="field-type w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
-                        <option value="text">text</option>
-                        <option value="textarea">textarea</option>
-                        <option value="number">number</option>
-                        <option value="date">date</option>
-                        <option value="select">select</option>
-                        <option value="checkbox">checkbox</option>
-                    </select>
+                <div class="flex gap-2 flex-shrink-0">
+                    <button type="button" onclick="wizardStep3.moveFieldUp(${fieldIndex})" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 font-bold flex items-center justify-center" title="위로">↑</button>
+                    <button type="button" onclick="wizardStep3.moveFieldDown(${fieldIndex})" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 font-bold flex items-center justify-center" title="아래로">↓</button>
+                    <button type="button" onclick="wizardStep3.removeField(${fieldIndex})" class="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 font-bold flex items-center justify-center" title="삭제">✕</button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <!-- Row 1: Element Type, Required, Width -->
+            <div class="grid grid-cols-3 gap-3">
                 <div>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" class="field-required w-4 h-4 text-indigo-600 rounded" checked>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">엘리먼트 타입</label>
+                    <select class="field-element-type w-full px-3 py-2 border border-gray-300 rounded text-sm" onchange="wizardStep3.updateFieldOptions(${fieldIndex})">
+                        <option value="input">input</option>
+                        <option value="textarea">textarea</option>
+                        <option value="select">select</option>
+                        <option value="checkbox">checkbox</option>
+                        <option value="html_editor">html_editor</option>
+                        <option value="file">file</option>
+                        <option value="range">range</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">너비</label>
+                    <input type="text" class="field-width w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="100%, 50%, 30%, auto" value="100%">
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer" style="margin-top: 24px;">
+                        <input type="checkbox" class="field-required w-4 h-4 text-indigo-600 rounded">
                         <span class="text-gray-700 text-sm">필수 입력</span>
                     </label>
                 </div>
+            </div>
+
+            <!-- Row 2: Inline Group, Help Text -->
+            <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">자수 제한</label>
-                    <input type="number" class="field-rows w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 3 (textarea용)">
+                    <label class="block text-gray-700 font-medium text-xs mb-1">인라인 그룹</label>
+                    <input type="text" class="field-inline-group w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: header, meta, options">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">도움말</label>
+                    <input type="text" class="field-help-text w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: 기록 날짜를 선택하세요">
                 </div>
             </div>
 
-            <div>
-                <label class="block text-gray-700 font-medium text-xs mb-1">도움말 텍스트</label>
-                <input type="text" class="field-help w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                    placeholder="예: 기록물의 제목을 입력하세요">
+            <!-- Row 3: Default Value, Min Value, Max Value -->
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">기본값</label>
+                    <input type="text" class="field-default-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: today, 5">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">Min 값</label>
+                    <input type="text" class="field-min-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: 0, 1">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">Max 값</label>
+                    <input type="text" class="field-max-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: 100, 10">
+                </div>
             </div>
 
-            <button onclick="wizardStep3.removeField(this)" class="text-red-600 hover:text-red-700 font-medium text-xs">
-                필드 삭제
-            </button>
+            <!-- Row 4: HTML Editor (Conditional) -->
+            <div class="field-html-editor-container" style="display: none;">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" class="field-use-html-editor w-4 h-4 text-indigo-600 rounded">
+                    <span class="text-gray-700 text-sm">HTML 에디터 사용</span>
+                </label>
+            </div>
+
+            <!-- Select Options (Hidden by default) -->
+            <div class="field-select-options" style="display: none;">
+                <label class="block text-gray-700 font-medium text-xs mb-2">선택 옵션</label>
+                <div class="space-y-2 mb-2" data-options-list="${fieldIndex}">
+                    <!-- Options will be added here -->
+                </div>
+                <button type="button" onclick="wizardStep3.addSelectOption(${fieldIndex})" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                    + 옵션 추가
+                </button>
+            </div>
+
+            <!-- Checkbox Default (Hidden by default) -->
+            <div class="field-checkbox-default" style="display: none;">
+                <label class="block text-gray-700 font-medium text-xs mb-2">기본값</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="checkbox-default-${fieldIndex}" class="field-checkbox-default-value w-4 h-4 text-indigo-600" value="true">
+                        <span class="text-gray-700 text-sm">True (체크)</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="checkbox-default-${fieldIndex}" class="field-checkbox-default-value w-4 h-4 text-indigo-600" value="false" checked>
+                        <span class="text-gray-700 text-sm">False (미체크)</span>
+                    </label>
+                </div>
+            </div>
         `;
 
-        fieldsContainer.appendChild(field);
+        container.appendChild(field);
+
+        // 기존 데이터가 있으면 채우기
+        if (typeof fieldData === 'object' && fieldData !== null) {
+            field.querySelector('.field-element-type').value = fieldData.element;
+            field.querySelector('.field-required').checked = fieldData.required || false;
+            field.querySelector('.field-width').value = fieldData.width || '100%';
+            field.querySelector('.field-help-text').value = fieldData.help_text || '';
+            field.querySelector('.field-inline-group').value = fieldData.inline_group || '';
+            field.querySelector('.field-default-value').value = fieldData.default_value || '';
+        }
     },
 
-    removeField(button) {
-        button.closest('.bg-white').remove();
+    moveFieldUp(index) {
+        const field = document.querySelector(`[data-field-index="${index}"]`);
+        const prev = field.previousElementSibling;
+        if (prev) {
+            field.parentNode.insertBefore(field, prev);
+        }
     },
 
-    removeSection(sectionIndex) {
-        document.querySelector(`[data-section-index="${sectionIndex}"]`).remove();
+    moveFieldDown(index) {
+        const field = document.querySelector(`[data-field-index="${index}"]`);
+        const next = field.nextElementSibling;
+        if (next) {
+            field.parentNode.insertBefore(next, field);
+        }
+    },
+
+    removeField(index) {
+        const field = document.querySelector(`[data-field-index="${index}"]`);
+        if (field) {
+            // 필드 삭제
+            field.remove();
+            // selector 옵션 업데이트
+            this.updateSelectorOptions();
+        }
+    },
+
+    addSelectedField() {
+        const selector = document.getElementById('fieldSelector');
+        const columnName = selector.value;
+
+        if (!columnName) {
+            alert('필드를 선택하세요.');
+            return;
+        }
+
+        // 이미 추가된 필드인지 확인
+        const alreadyAdded = document.querySelector(`[data-column-name="${columnName}"]`);
+        if (alreadyAdded) {
+            alert('이미 추가된 필드입니다.');
+            return;
+        }
+
+        this.addField(columnName);
+        this.updateSelectorOptions();
+        selector.value = '';
+    },
+
+    // selector 옵션 업데이트
+    updateSelectorOptions() {
+        const selector = document.getElementById('fieldSelector');
+        const addedFieldNames = Array.from(document.querySelectorAll('[data-column-name]')).map(el => el.dataset.columnName);
+
+        // 모든 옵션을 순회하며 표시/숨김 상태 업데이트
+        selector.querySelectorAll('option').forEach(option => {
+            if (option.value === '') return; // placeholder 제외
+            option.style.display = addedFieldNames.includes(option.value) ? 'none' : 'block';
+        });
+    },
+
+    updateFieldOptions(index) {
+        const field = document.querySelector(`[data-field-index="${index}"]`);
+        const elementType = field.querySelector('.field-element-type').value;
+        const dataType = field.querySelector('.field-data-type').value;
+        const selectOptionsDiv = field.querySelector('.field-select-options');
+        const checkboxDefaultDiv = field.querySelector('.field-checkbox-default');
+        const htmlEditorContainer = field.querySelector('.field-html-editor-container');
+        const htmlEditorCheckbox = field.querySelector('.field-use-html-editor');
+
+        // 모두 숨기기
+        selectOptionsDiv.style.display = 'none';
+        checkboxDefaultDiv.style.display = 'none';
+
+        // HTML 에디터는 텍스트/문장 타입에만 표시 (숫자, 날짜 타입은 숨김)
+        const textOnlyTypes = ['string', 'text'];
+        htmlEditorContainer.style.display = textOnlyTypes.includes(dataType) ? 'block' : 'none';
+
+        // 문장(text) 타입일 경우 HTML 에디터 기본값 체크
+        if (dataType === 'text' && htmlEditorCheckbox) {
+            htmlEditorCheckbox.checked = true;
+        }
+
+        // 타입에 따라 표시
+        if (elementType === 'select') {
+            selectOptionsDiv.style.display = 'block';
+        } else if (elementType === 'checkbox') {
+            checkboxDefaultDiv.style.display = 'block';
+        }
+    },
+
+    addSelectOption(index) {
+        const field = document.querySelector(`[data-field-index="${index}"]`);
+        const optionsList = field.querySelector(`[data-options-list="${index}"]`);
+        const optionIndex = optionsList.children.length + 1;
+
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'flex gap-2 items-end';
+        optionDiv.dataset.optionIndex = optionIndex;
+
+        optionDiv.innerHTML = `
+            <input type="text" placeholder="값" class="select-option-value w-24 px-2 py-1 border border-gray-300 rounded text-xs">
+            <input type="text" placeholder="라벨" class="select-option-label flex-1 px-2 py-1 border border-gray-300 rounded text-xs">
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-600 hover:text-red-700 text-sm">삭제</button>
+        `;
+
+        optionsList.appendChild(optionDiv);
     },
 
     getFormData() {
         const fields = [];
 
-        document.querySelectorAll('[data-field-index]').forEach(fieldEl => {
-            const name = fieldEl.querySelector('.field-name').value || fieldEl.querySelector('.field-label').value.toLowerCase();
-            const label = fieldEl.querySelector('.field-label').value.trim();
-            const inputType = fieldEl.querySelector('.field-type').value;
-            const required = fieldEl.querySelector('.field-required').checked;
-            const helpText = fieldEl.querySelector('.field-help').value.trim() || null;
-            const rows = fieldEl.querySelector('.field-rows').value;
+        document.querySelectorAll('[data-field-index]').forEach((fieldEl, index) => {
+            const name = fieldEl.querySelector('.field-name').value;
+            if (!name) return; // 필드명이 없으면 스킵
 
-            fields.push({
-                name,
-                label,
-                element: this.mapInputTypeToElement(inputType),
-                element_type: inputType,
-                required,
-                help_text: helpText,
-                ...(rows && { rows: parseInt(rows) })
-            });
+            const element = fieldEl.querySelector('.field-element-type').value;
+
+            const fieldData = {
+                name: name,
+                label: fieldEl.querySelector('.field-label').value,
+                data_type: fieldEl.querySelector('.field-data-type').value,
+                element: element,
+                element_type: element,
+                required: fieldEl.querySelector('.field-required').checked,
+                width: fieldEl.querySelector('.field-width').value || '100%',
+                order: index + 1  // 화면 상 순서대로 order 설정
+            };
+
+            // 선택적 필드
+            const helpText = fieldEl.querySelector('.field-help-text').value.trim();
+            if (helpText) fieldData.help_text = helpText;
+
+            const inlineGroup = fieldEl.querySelector('.field-inline-group').value.trim();
+            if (inlineGroup) fieldData.inline_group = inlineGroup;
+
+            const defaultValue = fieldEl.querySelector('.field-default-value').value.trim();
+            if (defaultValue) fieldData.default_value = defaultValue;
+
+            const minValue = fieldEl.querySelector('.field-min-value').value.trim();
+            if (minValue) {
+                fieldData.min_value = isNaN(minValue) ? minValue : parseFloat(minValue);
+            }
+
+            const maxValue = fieldEl.querySelector('.field-max-value').value.trim();
+            if (maxValue) {
+                fieldData.max_value = isNaN(maxValue) ? maxValue : parseFloat(maxValue);
+            }
+
+            // Select 타입: options 수집
+            if (element === 'select') {
+                const optionsList = fieldEl.querySelector('[data-options-list]');
+                if (optionsList) {
+                    const options = [];
+                    optionsList.querySelectorAll('[data-option-index]').forEach(optionEl => {
+                        const value = optionEl.querySelector('.select-option-value').value.trim();
+                        const label = optionEl.querySelector('.select-option-label').value.trim();
+                        if (value && label) {
+                            options.push({ value, label });
+                        }
+                    });
+                    if (options.length > 0) {
+                        fieldData.options = options;
+                    }
+                }
+            }
+
+            // Checkbox 타입: default_value를 true/false로 설정
+            if (element === 'checkbox') {
+                const checkboxDefault = fieldEl.querySelector('.field-checkbox-default-value:checked');
+                if (checkboxDefault) {
+                    fieldData.default_value = checkboxDefault.value === 'true';
+                }
+            }
+
+            // HTML Editor 사용 여부
+            if (element === 'textarea' && fieldEl.querySelector('.field-use-html-editor').checked) {
+                fieldData.element = 'html_editor';
+                fieldData.element_type = 'html_editor';
+            }
+
+            fields.push(fieldData);
         });
 
         return {
             create_edit: {
-                fields
+                fields: fields
             }
         };
-    },
-
-    mapInputTypeToElement(inputType) {
-        const mapping = {
-            'text': 'input',
-            'textarea': 'textarea',
-            'number': 'input',
-            'date': 'input',
-            'select': 'select',
-            'checkbox': 'checkbox'
-        };
-        return mapping[inputType] || 'input';
     },
 
     async submit() {
         try {
             const formData = this.getFormData();
+
+            if (formData.create_edit.fields.length === 0) {
+                alert('최소 1개 이상의 필드를 추가하세요.');
+                return;
+            }
+
+            console.log('Submitting form data:', formData);
 
             const response = await fetch('/boards/new/step3/{{ board.id }}', {
                 method: 'POST',
@@ -236,29 +429,90 @@ const wizardStep3 = {
             const data = await response.json();
 
             if (!response.ok) {
-                alert('오류: ' + data.detail);
+                alert('오류: ' + (data.detail || '알 수 없는 오류'));
                 return;
             }
 
             window.location.href = data.redirect;
         } catch (error) {
+            console.error('Error:', error);
             alert('오류: ' + error.message);
         }
     }
 };
 
-// Initialize with one section
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    wizardStep3.addSection();
-    // Add fields for each column
-    {% for column in columns %}
-    wizardStep3.addField(1);
-    const lastField = document.querySelector('[data-field-index]:last-of-type');
-    if (lastField) {
-        lastField.querySelector('.field-name').value = '{{ column.name }}';
-        lastField.querySelector('.field-label').value = '{{ column.label }}';
+    const selector = document.getElementById('fieldSelector');
+
+    // [1] 항상 모든 필드를 selector에 표시
+    allColumns.forEach(column => {
+        const option = document.createElement('option');
+        option.value = column.name;
+        option.textContent = `${column.label} (${column.name})`;
+        selector.appendChild(option);
+    });
+
+    // [2] 기존 설정이 있으면 로드 (edit mode)
+    if (createEditConfig && createEditConfig.fields && createEditConfig.fields.length > 0) {
+        createEditConfig.fields.forEach(fieldData => {
+            wizardStep3.addField(fieldData.name);
+            // 필드별 설정값 적용
+            const lastField = document.querySelector('[data-field-index]:last-of-type');
+            if (lastField) {
+                lastField.querySelector('.field-element-type').value = fieldData.element;
+                lastField.querySelector('.field-required').checked = fieldData.required || false;
+                lastField.querySelector('.field-width').value = fieldData.width || '100%';
+                lastField.querySelector('.field-help-text').value = fieldData.help_text || '';
+                lastField.querySelector('.field-inline-group').value = fieldData.inline_group || '';
+
+                // Min/Max 값 설정
+                if (fieldData.min_value !== undefined) {
+                    lastField.querySelector('.field-min-value').value = fieldData.min_value;
+                }
+                if (fieldData.max_value !== undefined) {
+                    lastField.querySelector('.field-max-value').value = fieldData.max_value;
+                }
+
+                // Select 타입: options 복원
+                if (fieldData.element === 'select' && fieldData.options) {
+                    const optionsList = lastField.querySelector('[data-options-list]');
+                    fieldData.options.forEach(opt => {
+                        wizardStep3.addSelectOption(lastField.dataset.fieldIndex);
+                        const lastOption = optionsList.lastElementChild;
+                        if (lastOption) {
+                            lastOption.querySelector('.select-option-value').value = opt.value;
+                            lastOption.querySelector('.select-option-label').value = opt.label;
+                        }
+                    });
+                }
+
+                // Checkbox 타입: default_value 복원
+                if (fieldData.element === 'checkbox' && fieldData.default_value !== undefined) {
+                    const defaultValue = fieldData.default_value === true ? 'true' : 'false';
+                    const radio = lastField.querySelector(`input[name="checkbox-default-${lastField.dataset.fieldIndex}"][value="${defaultValue}"]`);
+                    if (radio) radio.checked = true;
+                }
+
+                // HTML Editor 사용 여부 복원
+                if (fieldData.element === 'html_editor' && fieldData.element_type === 'html_editor') {
+                    lastField.querySelector('.field-element-type').value = 'textarea';
+                    lastField.querySelector('.field-use-html-editor').checked = true;
+                }
+
+                // 초기값 설정
+                if (fieldData.default_value && fieldData.element !== 'checkbox' && fieldData.element !== 'html_editor') {
+                    lastField.querySelector('.field-default-value').value = fieldData.default_value;
+                }
+
+                // 조건부 UI 업데이트 (옵션/체크박스 표시)
+                wizardStep3.updateFieldOptions(lastField.dataset.fieldIndex);
+            }
+        });
+
+        // [3] selector 옵션 업데이트 (추가된 필드들은 숨기기)
+        wizardStep3.updateSelectorOptions();
     }
-    {% endfor %}
 });
 </script>
 {% endblock %}

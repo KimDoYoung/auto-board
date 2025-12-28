@@ -1,11 +1,10 @@
-# create json 기술
+# step3 - create_edit
 
-## 개요
-
-- meta_data table에 `create` 항목으로 저장된다.
-- table_{id}에 새로운 레코드가 추가될 때 어떻게 html이 만들어지고 사용자에게 입력받느냐를 column별로 기술한다.
+## wizard_step3.html의 submit 시
 
 ## json 예
+
+- 아래 json을 만들어서 meta_data에 `create_edit` 로 입력한다.
 
 ```json
 {
