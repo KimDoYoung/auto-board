@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 프로그램을 실행시켜서 수행 시키기 보다는 번호를 매기면서 한글로 로그를 달아서 성공적인 수행여부를 확인한다.
 
 ## Project Overview
@@ -166,20 +167,11 @@ SQLite type mapping in `app/utils/db_manager.py:map_sqlite_type()`:
 - `float` → REAL
 - All others (including `string`, `text`, `ymd`, `datetime`) → TEXT
 
-## Key Implementation Notes
+## 주요 구현 참고사항
 
-- Board routes are prefixed with `/boards` (defined in `app/routes/board.py`)
-- Templates are stored in `app.state.templates` for access across routes
-- All timestamps use SQLite's CURRENT_TIMESTAMP default
-- Column metadata supports: data_type, required, default_value, min_value, max_value, length
-- List metadata supports pagination, sorting, searching, display modes (table/card)
-- View metadata uses predefined style classes for field presentation
-
-## Design Documents
-
-Reference `docs/` for detailed metadata JSON schemas:
-
-- `docs/design.md`: Overall architecture and requirements
-- `docs/columns.md`: Column field metadata structure
-- `docs/list.md`: List view configuration
-- `docs/view.md`: Detail view styling
+- 보드 라우트는 /boards 접두사 사용 (app/routes/board.py에 정의됨)
+- 템플릿은 라우트 간 접근을 위해 app.state.templates에 저장됨
+- 모든 타임스탬프는 SQLite의 CURRENT_TIMESTAMP 기본값 사용
+- 컬럼 메타데이터 지원: data_type, required, default_value, min_value, max_value, length
+- 목록 메타데이터 지원: 페이지네이션, 정렬, 검색, 표시 모드 (table/card)
+- 뷰 메타데이터는 필드 표시를 위해 사전 정의된 스타일 클래스 사용

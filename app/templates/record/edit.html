@@ -5,16 +5,16 @@
 {% block content %}
 {% include 'common/nav.html' %}
 
-<div class="p-8 max-w-2xl mx-auto">
+<div class="px-4 py-8 sm:p-8 max-w-2xl mx-auto">
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-[#1a1a2e] mb-2">기록 수정</h1>
-        <p class="text-gray-600">{{ board.name }} - #{{ record.id }}</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-[#1a1a2e] mb-2">기록 수정</h1>
+        <p class="text-gray-600 text-sm sm:text-base">{{ board.name }} - #{{ record.id }}</p>
     </div>
 
     <!-- Form -->
-    <form id="editForm" class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        <div class="space-y-6">
+    <form id="editForm" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        <div class="space-y-5 sm:space-y-6">
             {% for column in columns %}
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -23,7 +23,7 @@
                 </label>
                 <input type="text"
                     name="{{ column.name }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    class="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-base sm:text-sm transition-colors"
                     value="{{ record.get(column.name, '') }}"
                     {% if column.required %}required{% endif %}
                     placeholder="{{ column.label }}">
@@ -31,11 +31,11 @@
             {% endfor %}
         </div>
 
-        <div class="flex gap-4 mt-8">
-            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8">
+            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition-colors min-h-12">
                 저장
             </button>
-            <a href="/boards/{{ board.id }}/records" class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold text-center">
+            <a href="/boards/{{ board.id }}/records" class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold text-center transition-colors min-h-12 flex items-center justify-center">
                 취소
             </a>
         </div>
