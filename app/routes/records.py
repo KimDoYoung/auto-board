@@ -28,7 +28,7 @@ async def get_records_list(
     user: User = Depends(get_current_user_from_cookie),
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
-    """기록물 목록 조회 (HTML)"""
+    """기록물 list  조회 (HTML)"""
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
