@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Checker - {{ board.name }} - Auto-Board{% endblock %}
+
+{% block content %}
+{% include 'common/nav.html' %}
+
+<div class="px-4 py-8 sm:p-8 mx-auto" style="max-width: 95vw;">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-[#1a1a2e] mb-2">Checker: {{ board.name }}</h1>
+            <p class="text-gray-600">ID: {{ board.id }} | Table: {{ board.physical_table_name }}</p>
+        </div>
+        <a href="/records/{{ board.id }}/" class="text-indigo-600 hover:text-indigo-800 font-bold">
+            &larr; 돌아가기
+        </a>
+    </div>
+
+    <!-- 1. Board Info Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Board Table Info</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="bg-gray-50 text-gray-700">
+                    <tr>
+                        <th class="px-4 py-2">Field</th>
+                        <th class="px-4 py-2">Value</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr><td class="px-4 py-2 font-semibold">ID</td><td class="px-4 py-2">{{ board.id }}</td></tr>
+                    <tr><td class="px-4 py-2 font-semibold">Name</td><td class="px-4 py-2">{{ board.name }}</td></tr>
+                    <tr><td class="px-4 py-2 font-semibold">Note</td><td class="px-4 py-2">{{ board.note }}</td></tr>
+                    <tr><td class="px-4 py-2 font-semibold">Physical Table</td><td class="px-4 py-2 font-mono text-indigo-600">{{ board.physical_table_name }}</td></tr>
+                    <tr><td class="px-4 py-2 font-semibold">Created At</td><td class="px-4 py-2">{{ board.created_at }}</td></tr>
+                    <tr><td class="px-4 py-2 font-semibold">Updated At</td><td class="px-4 py-2">{{ board.updated_at }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. Meta Data List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Meta Data (JSON)</h2>
+        
+        <div class="space-y-6">
+            {% for item in meta_data_list %}
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
+                    <span class="font-bold text-indigo-700 font-mono">{{ item.key }}</span>
+                    <span class="text-xs text-gray-500">Updated: {{ item.updated_at }}</span>
+                </div>
+                <div class="p-4 bg-slate-50 overflow-x-auto">
+                    <pre class="text-xs sm:text-sm font-mono text-gray-800 whitespace-pre-wrap">{{ item.data }}</pre>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -15,6 +15,13 @@
                 <p class="text-gray-600 mt-2 text-sm sm:text-base">{{ board.note }}</p>
                 {% endif %}
             </div>
+            <a href="/checker/{{ board.id }}" target="_blank"
+                class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-bold whitespace-nowrap transition-colors min-h-12">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Check</span>
+            </a>
             <a href="/records/{{ board.id }}/create"
                 class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold whitespace-nowrap transition-colors min-h-12">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
