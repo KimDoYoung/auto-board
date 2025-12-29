@@ -58,7 +58,7 @@
 <script>
 function deleteRecord(boardId, recordId) {
     if (confirm('이 기록을 삭제하시겠습니까?')) {
-        fetch(`/boards/${boardId}/records/${recordId}`, {
+        fetch(`/records/${boardId}/${recordId}`, {
             method: 'DELETE'
         })
         .then(response => {

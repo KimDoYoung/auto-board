@@ -49,7 +49,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     const data = Object.fromEntries(formData);
 
     try {
-        const response = await fetch('/boards/{{ board.id }}/records', {
+        const response = await fetch('/records/{{ board.id }}/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

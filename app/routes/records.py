@@ -13,14 +13,14 @@ from app.utils.db_manager import DBManager
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/boards/{board_id}/records", tags=["records"])
+router = APIRouter(prefix="/records", tags=["records"])
 
 
 # ============================================================================
 # Get Records List (API)
 # ============================================================================
 
-@router.get("/")
+@router.get("/{board_id}/")
 async def get_records_list(
     board_id: int,
     user: User = Depends(get_current_user_from_cookie),
@@ -64,7 +64,7 @@ async def get_records_list(
 # Create Record (API)
 # ============================================================================
 
-@router.post("/")
+@router.post("/{board_id}/")
 async def create_record(
     board_id: int,
     form_data: dict,
@@ -105,7 +105,8 @@ async def create_record(
         return {
             "success": True,
             "record_id": record_id,
-            "board_id": board_id
+            "board_id": board_id,
+            "redirect": f"/boards/{board_id}/records/{record_id}"
         }
 
     except Exception as e:
@@ -120,7 +121,7 @@ async def create_record(
 # Get Record Detail (API)
 # ============================================================================
 
-@router.get("/{record_id}")
+@router.get("/{board_id}/{record_id}")
 async def get_record(
     board_id: int,
     record_id: int,
@@ -171,7 +172,7 @@ async def get_record(
 # Update Record (API)
 # ============================================================================
 
-@router.put("/{record_id}")
+@router.put("/{board_id}/{record_id}")
 async def update_record(
     board_id: int,
     record_id: int,
@@ -203,7 +204,7 @@ async def update_record(
 
         if not update_fields:
             logger.warning("[RECORD-UPDATE-2] 업데이트할 필드가 없습니다")
-            return {"success": True, "record_id": record_id}
+            return {"success": True, "record_id": record_id, "redirect": f"/boards/{board_id}/records/{record_id}"}
 
         update_sql = f"UPDATE {physical_table_name} SET {','.join(update_fields)} WHERE id = ?"
         logger.info(f"[RECORD-UPDATE-2] SQL 실행: {update_sql}")
@@ -216,7 +217,8 @@ async def update_record(
         return {
             "success": True,
             "record_id": record_id,
-            "board_id": board_id
+            "board_id": board_id,
+            "redirect": f"/boards/{board_id}/records/{record_id}"
         }
 
     except Exception as e:
@@ -231,7 +233,7 @@ async def update_record(
 # Delete Record (API)
 # ============================================================================
 
-@router.delete("/{record_id}")
+@router.delete("/{board_id}/{record_id}")
 async def delete_record(
     board_id: int,
     record_id: int,

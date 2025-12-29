@@ -134,12 +134,24 @@ async def record_view_page(
     columns_data = table_meta.get("columns", [])
     view_config = db_manager.get_metadata(board_id, "view")
 
+    # 레코드 조회
+    physical_table_name = board_info["physical_table_name"]
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {physical_table_name} WHERE id = ?", (record_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        return RedirectResponse(url=f"/boards/{board_id}/records", status_code=status.HTTP_302_FOUND)
+
+    record = dict(row)
+
     return request.app.state.templates.TemplateResponse(
         "record/view.html",
         {
             "request": request,
             "user": user,
             "board": board_info,
+            "record": record,
             "columns": columns_data,
             "view_config": view_config
         }
@@ -168,12 +180,24 @@ async def record_edit_page(
     columns_data = table_meta.get("columns", [])
     create_edit_config = db_manager.get_metadata(board_id, "create_edit")
 
+    # 레코드 조회
+    physical_table_name = board_info["physical_table_name"]
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {physical_table_name} WHERE id = ?", (record_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        return RedirectResponse(url=f"/boards/{board_id}/records", status_code=status.HTTP_302_FOUND)
+
+    record = dict(row)
+
     return request.app.state.templates.TemplateResponse(
         "record/edit.html",
         {
             "request": request,
             "user": user,
             "board": board_info,
+            "record": record,
             "columns": columns_data,
             "create_edit_config": create_edit_config
         }

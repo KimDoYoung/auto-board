@@ -16,7 +16,7 @@
                 {% endif %}
             </div>
             <a href="/boards/{{ board.id }}/records/new"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
+                class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold whitespace-nowrap">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -76,7 +76,7 @@ const columns = {{ columns | tojson }};
 
 async function loadRecords() {
     try {
-        const response = await fetch(`/boards/${boardId}/records`);
+        const response = await fetch(`/records/${boardId}/`);
         if (!response.ok) throw new Error('API 호출 실패');
 
         const data = await response.json();
@@ -131,7 +131,7 @@ function renderRecords(records) {
 
 function deleteRecord(boardId, recordId) {
     if (confirm('이 기록을 삭제하시겠습니까?')) {
-        fetch(`/boards/${boardId}/records/${recordId}`, {
+        fetch(`/records/${boardId}/${recordId}`, {
             method: 'DELETE'
         })
         .then(response => {
