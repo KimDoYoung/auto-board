@@ -117,96 +117,6 @@ async def list_boards_paginated(
     )
 
 
-@router.get("/{board_id}/records/{record_id}", response_class=HTMLResponse)
-async def record_view_page(
-    request: Request,
-    board_id: int,
-    record_id: int,
-    user: User = Depends(get_current_user_from_cookie),
-    conn: sqlite3.Connection = Depends(get_db_connection)
-):
-    """기록 상세보기 페이지"""
-    if not user:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-
-    db_manager = DBManager(conn)
-    board_info = db_manager.get_board_info(board_id)
-
-    if not board_info:
-        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
-
-    table_meta = db_manager.get_metadata(board_id, "table") or {}
-    columns_data = table_meta.get("columns", [])
-    view_config = db_manager.get_metadata(board_id, "view")
-
-    # 레코드 조회
-    physical_table_name = board_info["physical_table_name"]
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {physical_table_name} WHERE id = ?", (record_id,))
-    row = cursor.fetchone()
-
-    if not row:
-        return RedirectResponse(url=f"/boards/{board_id}/records", status_code=status.HTTP_302_FOUND)
-
-    record = dict(row)
-
-    return request.app.state.templates.TemplateResponse(
-        "record/view.html",
-        {
-            "request": request,
-            "user": user,
-            "board": board_info,
-            "record": record,
-            "columns": columns_data,
-            "view_config": view_config
-        }
-    )
-
-
-@router.get("/{board_id}/records/{record_id}/edit", response_class=HTMLResponse)
-async def record_edit_page(
-    request: Request,
-    board_id: int,
-    record_id: int,
-    user: User = Depends(get_current_user_from_cookie),
-    conn: sqlite3.Connection = Depends(get_db_connection)
-):
-    """기록 수정 페이지"""
-    if not user:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-
-    db_manager = DBManager(conn)
-    board_info = db_manager.get_board_info(board_id)
-
-    if not board_info:
-        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
-
-    table_meta = db_manager.get_metadata(board_id, "table") or {}
-    columns_data = table_meta.get("columns", [])
-    create_edit_config = db_manager.get_metadata(board_id, "create_edit")
-
-    # 레코드 조회
-    physical_table_name = board_info["physical_table_name"]
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {physical_table_name} WHERE id = ?", (record_id,))
-    row = cursor.fetchone()
-
-    if not row:
-        return RedirectResponse(url=f"/boards/{board_id}/records", status_code=status.HTTP_302_FOUND)
-
-    record = dict(row)
-
-    return request.app.state.templates.TemplateResponse(
-        "record/edit.html",
-        {
-            "request": request,
-            "user": user,
-            "board": board_info,
-            "record": record,
-            "columns": columns_data,
-            "create_edit_config": create_edit_config
-        }
-    )
 
 # ============================================================================
 # 5-Step Board Creation Wizard
@@ -908,21 +818,21 @@ async def create_board_page(user: User = Depends(get_current_user_from_cookie)):
 
     return RedirectResponse(url="/boards/new/step1", status_code=status.HTTP_302_FOUND)
 
-@router.post("/create", response_model=BoardResponse)
-def create_board(
-    board_data: BoardCreate,
-    conn: sqlite3.Connection = Depends(get_db_connection)
-):
-    """
-    게시판 생성 API (레거시 - 호환성 유지)
-    """
-    logger.info(f"🚀 Received Board Creation Request: {board_data.board.name}")
-    try:
-        db_manager = DBManager(conn)
-        return db_manager.create_board(board_data)
-    except Exception as e:
-        # DBManager already logs error
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.post("/create", response_model=BoardResponse)
+# def create_board(
+#     board_data: BoardCreate,
+#     conn: sqlite3.Connection = Depends(get_db_connection)
+# ):
+#     """
+#     게시판 생성 API (레거시 - 호환성 유지)
+#     """
+#     logger.info(f"🚀 Received Board Creation Request: {board_data.board.name}")
+#     try:
+#         db_manager = DBManager(conn)
+#         return db_manager.create_board(board_data)
+#     except Exception as e:
+#         # DBManager already logs error
+#         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{board_id}/columns")
 def get_board_columns(

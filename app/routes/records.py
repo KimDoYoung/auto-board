@@ -3,7 +3,8 @@ Records API - 기록물(기록 아이템) 순수 CRUD API
 각 보드의 실제 데이터 레코드를 JSON으로 반환
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 import sqlite3
 
 from app.core.logger import get_logger
@@ -17,18 +18,19 @@ router = APIRouter(prefix="/records", tags=["records"])
 
 
 # ============================================================================
-# Get Records List (API)
+# HTML Pages
 # ============================================================================
 
-@router.get("/{board_id}/")
+@router.get("/{board_id}/", response_class=HTMLResponse)
 async def get_records_list(
+    request: Request,
     board_id: int,
     user: User = Depends(get_current_user_from_cookie),
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
-    """기록물 목록 조회 (JSON)"""
+    """기록물 목록 조회 (HTML)"""
     if not user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
     logger.info(f"[RECORDS-LIST-1] board_id={board_id} 기록물 목록 조회 시작")
 
@@ -37,9 +39,13 @@ async def get_records_list(
 
     if not board_info:
         logger.error(f"[RECORDS-LIST-ERROR] 보드를 찾을 수 없음: board_id={board_id}")
-        raise HTTPException(status_code=404, detail="Board not found")
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
 
     logger.info(f"[RECORDS-LIST-2] ✓ 보드 찾음: {board_info['name']}")
+
+    # 컬럼 정보 조회
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns = table_meta.get("columns", [])
 
     # 실제 레코드 조회
     physical_table_name = board_info["physical_table_name"]
@@ -51,20 +57,148 @@ async def get_records_list(
         logger.info(f"[RECORDS-LIST-3] ✓ 레코드 조회 완료: {len(records)}개")
     except Exception as e:
         logger.error(f"[RECORDS-LIST-ERROR] 레코드 조회 실패: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        records = []
 
-    return {
-        "board_id": board_id,
-        "board_name": board_info["name"],
-        "records": records
-    }
+    return request.app.state.templates.TemplateResponse(
+        "record/list.html",
+        {
+            "request": request,
+            "user": user,
+            "board": board_info,
+            "records": records,
+            "columns": columns
+        }
+    )
+
+
+@router.get("/{board_id}/create", response_class=HTMLResponse)
+async def record_create_page(
+    request: Request,
+    board_id: int,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """기록 생성 페이지"""
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    db_manager = DBManager(conn)
+    board_info = db_manager.get_board_info(board_id)
+
+    if not board_info:
+        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
+
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns_data = table_meta.get("columns", [])
+
+    return request.app.state.templates.TemplateResponse(
+        "record/create.html",
+        {
+            "request": request,
+            "user": user,
+            "board": board_info,
+            "columns": columns_data
+        }
+    )
+
+
+@router.get("/{board_id}/view/{record_id}", response_class=HTMLResponse)
+async def record_view_page(
+    request: Request,
+    board_id: int,
+    record_id: int,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """기록 상세보기 페이지"""
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    db_manager = DBManager(conn)
+    board_info = db_manager.get_board_info(board_id)
+
+    if not board_info:
+        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
+
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns_data = table_meta.get("columns", [])
+    view_config = db_manager.get_metadata(board_id, "view")
+
+    # 레코드 조회
+    physical_table_name = board_info["physical_table_name"]
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {physical_table_name} WHERE id = ?", (record_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        return RedirectResponse(url=f"/records/{board_id}/", status_code=status.HTTP_302_FOUND)
+
+    record = dict(row)
+
+    return request.app.state.templates.TemplateResponse(
+        "record/view.html",
+        {
+            "request": request,
+            "user": user,
+            "board": board_info,
+            "record": record,
+            "columns": columns_data,
+            "view_config": view_config
+        }
+    )
+
+
+@router.get("/{board_id}/edit/{record_id}", response_class=HTMLResponse)
+async def record_edit_page(
+    request: Request,
+    board_id: int,
+    record_id: int,
+    user: User = Depends(get_current_user_from_cookie),
+    conn: sqlite3.Connection = Depends(get_db_connection)
+):
+    """기록 수정 페이지"""
+    if not user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    db_manager = DBManager(conn)
+    board_info = db_manager.get_board_info(board_id)
+
+    if not board_info:
+        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
+
+    table_meta = db_manager.get_metadata(board_id, "table") or {}
+    columns_data = table_meta.get("columns", [])
+    create_edit_config = db_manager.get_metadata(board_id, "create_edit")
+
+    # 레코드 조회
+    physical_table_name = board_info["physical_table_name"]
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {physical_table_name} WHERE id = ?", (record_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        return RedirectResponse(url=f"/records/{board_id}/", status_code=status.HTTP_302_FOUND)
+
+    record = dict(row)
+
+    return request.app.state.templates.TemplateResponse(
+        "record/edit.html",
+        {
+            "request": request,
+            "user": user,
+            "board": board_info,
+            "record": record,
+            "columns": columns_data,
+            "create_edit_config": create_edit_config
+        }
+    )
 
 
 # ============================================================================
-# Create Record (API)
+# JSON APIs
 # ============================================================================
 
-@router.post("/{board_id}/")
+@router.post("/api/{board_id}/")
 async def create_record(
     board_id: int,
     form_data: dict,
@@ -106,7 +240,7 @@ async def create_record(
             "success": True,
             "record_id": record_id,
             "board_id": board_id,
-            "redirect": f"/boards/{board_id}/records/{record_id}"
+            "redirect": f"/records/{board_id}/"
         }
 
     except Exception as e:
@@ -117,11 +251,7 @@ async def create_record(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# Get Record Detail (API)
-# ============================================================================
-
-@router.get("/{board_id}/{record_id}")
+@router.get("/api/{board_id}/{record_id}")
 async def get_record(
     board_id: int,
     record_id: int,
@@ -168,11 +298,7 @@ async def get_record(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# Update Record (API)
-# ============================================================================
-
-@router.put("/{board_id}/{record_id}")
+@router.put("/api/{board_id}/{record_id}")
 async def update_record(
     board_id: int,
     record_id: int,
@@ -204,7 +330,8 @@ async def update_record(
 
         if not update_fields:
             logger.warning("[RECORD-UPDATE-2] 업데이트할 필드가 없습니다")
-            return {"success": True, "record_id": record_id, "redirect": f"/boards/{board_id}/records/{record_id}"}
+            # HTML 리다이렉트 경로 수정
+            return {"success": True, "record_id": record_id, "redirect": f"/records/{board_id}/view/{record_id}"}
 
         update_sql = f"UPDATE {physical_table_name} SET {','.join(update_fields)} WHERE id = ?"
         logger.info(f"[RECORD-UPDATE-2] SQL 실행: {update_sql}")
@@ -218,7 +345,7 @@ async def update_record(
             "success": True,
             "record_id": record_id,
             "board_id": board_id,
-            "redirect": f"/boards/{board_id}/records/{record_id}"
+            "redirect": f"/records/{board_id}/view/{record_id}"
         }
 
     except Exception as e:
@@ -229,11 +356,7 @@ async def update_record(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============================================================================
-# Delete Record (API)
-# ============================================================================
-
-@router.delete("/{board_id}/{record_id}")
+@router.delete("/api/{board_id}/{record_id}")
 async def delete_record(
     board_id: int,
     record_id: int,

@@ -15,7 +15,7 @@
                 <p class="text-gray-600 mt-2 text-sm sm:text-base">{{ board.note }}</p>
                 {% endif %}
             </div>
-            <a href="/boards/{{ board.id }}/records/new"
+            <a href="/records/{{ board.id }}/create"
                 class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold whitespace-nowrap transition-colors min-h-12">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -25,14 +25,9 @@
         </div>
     </div>
 
-    <!-- Loading State -->
-    <div id="loading" class="bg-white rounded-xl p-8 sm:p-12 text-center shadow-sm border border-gray-100">
-        <div class="animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-indigo-600 rounded-full"></div>
-        <p class="mt-4 text-gray-600">로드 중...</p>
-    </div>
-
     <!-- Records Table -->
-    <div id="recordsTable" style="display:none;">
+    {% if records and records|length > 0 %}
+    <div id="recordsTable">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -47,20 +42,49 @@
                         </tr>
                     </thead>
                     <tbody id="recordsBody">
+                        {% for record in records %}
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm font-mono text-gray-700 whitespace-nowrap">#{{ record.id }}</td>
+                            {% for col in columns %}
+                            <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm text-gray-700 whitespace-nowrap truncate max-w-xs">
+                                {{ record[col.name] if record[col.name] else '-' }}
+                            </td>
+                            {% endfor %}
+                            <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+                                {{ record.created_at if record.created_at else '-' }}
+                            </td>
+                            <td class="px-3 sm:px-6 py-4 text-center">
+                                <div class="flex gap-1 sm:gap-2 justify-center flex-wrap">
+                                    <a href="/records/{{ board.id }}/view/{{ record.id }}"
+                                        class="text-indigo-600 hover:text-indigo-700 font-semibold text-xs px-2 py-1 hover:bg-indigo-50 rounded transition-colors whitespace-nowrap">
+                                        보기
+                                    </a>
+                                    <a href="/records/{{ board.id }}/edit/{{ record.id }}"
+                                        class="text-blue-600 hover:text-blue-700 font-semibold text-xs px-2 py-1 hover:bg-blue-50 rounded transition-colors whitespace-nowrap">
+                                        수정
+                                    </a>
+                                    <button onclick="deleteRecord({{ board.id }}, {{ record.id }})"
+                                        class="text-red-600 hover:text-red-700 font-semibold text-xs px-2 py-1 hover:bg-red-50 rounded transition-colors whitespace-nowrap">
+                                        삭제
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-
+    {% else %}
     <!-- Empty State -->
-    <div id="emptyState" style="display:none;" class="bg-white rounded-xl p-8 sm:p-12 text-center shadow-sm border border-gray-100">
+    <div id="emptyState" class="bg-white rounded-xl p-8 sm:p-12 text-center shadow-sm border border-gray-100">
         <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
         </svg>
         <h3 class="text-xl font-bold text-gray-900 mb-2">기록이 없습니다</h3>
         <p class="text-gray-600 mb-6">새 기록을 추가하여 시작하세요!</p>
-        <a href="/boards/{{ board.id }}/records/new"
+        <a href="/records/{{ board.id }}/create"
             class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -68,70 +92,13 @@
             새 기록 추가
         </a>
     </div>
+    {% endif %}
 </div>
 
 <script>
-const boardId = {{ board.id }};
-const columns = {{ columns | tojson | safe }};
-
-async function loadRecords() {
-    try {
-        const response = await fetch(`/records/${boardId}/`);
-        if (!response.ok) throw new Error('API 호출 실패');
-
-        const data = await response.json();
-        const records = data.records || [];
-
-        document.getElementById('loading').style.display = 'none';
-
-        if (records.length === 0) {
-            document.getElementById('emptyState').style.display = 'block';
-        } else {
-            document.getElementById('recordsTable').style.display = 'block';
-            renderRecords(records);
-        }
-    } catch (error) {
-        console.error('오류:', error);
-        document.getElementById('loading').innerHTML = '<p class="text-red-600">데이터 로드 실패</p>';
-    }
-}
-
-function renderRecords(records) {
-    const tbody = document.getElementById('recordsBody');
-    tbody.innerHTML = records.map(record => `
-        <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-            <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm font-mono text-gray-700 whitespace-nowrap">#${record.id}</td>
-            ${columns.map(col => `
-                <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm text-gray-700 whitespace-nowrap truncate max-w-xs">
-                    ${record[col.name] || '-'}
-                </td>
-            `).join('')}
-            <td class="px-3 sm:px-6 py-4 text-xs sm:text-sm text-gray-500 whitespace-nowrap">
-                ${record.created_at || '-'}
-            </td>
-            <td class="px-3 sm:px-6 py-4 text-center">
-                <div class="flex gap-1 sm:gap-2 justify-center flex-wrap">
-                    <a href="/boards/${boardId}/records/${record.id}"
-                        class="text-indigo-600 hover:text-indigo-700 font-semibold text-xs px-2 py-1 hover:bg-indigo-50 rounded transition-colors whitespace-nowrap">
-                        보기
-                    </a>
-                    <a href="/boards/${boardId}/records/${record.id}/edit"
-                        class="text-blue-600 hover:text-blue-700 font-semibold text-xs px-2 py-1 hover:bg-blue-50 rounded transition-colors whitespace-nowrap">
-                        수정
-                    </a>
-                    <button onclick="deleteRecord(${boardId}, ${record.id})"
-                        class="text-red-600 hover:text-red-700 font-semibold text-xs px-2 py-1 hover:bg-red-50 rounded transition-colors whitespace-nowrap">
-                        삭제
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
 function deleteRecord(boardId, recordId) {
     if (confirm('이 기록을 삭제하시겠습니까?')) {
-        fetch(`/records/${boardId}/${recordId}`, {
+        fetch(`/records/api/${boardId}/${recordId}`, {
             method: 'DELETE'
         })
         .then(response => {
@@ -147,9 +114,6 @@ function deleteRecord(boardId, recordId) {
         });
     }
 }
-
-// 페이지 로드 시 기록 조회
-document.addEventListener('DOMContentLoaded', loadRecords);
 </script>
 
 <style>

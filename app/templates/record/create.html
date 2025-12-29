@@ -34,7 +34,7 @@
             <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition-colors min-h-12">
                 저장
             </button>
-            <a href="/boards/{{ board.id }}/records" class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold text-center transition-colors min-h-12 flex items-center justify-center">
+            <a href="/records/{{ board.id }}/" class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold text-center transition-colors min-h-12 flex items-center justify-center">
                 취소
             </a>
         </div>
@@ -49,7 +49,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     const data = Object.fromEntries(formData);
 
     try {
-        const response = await fetch('/records/{{ board.id }}/', {
+        const response = await fetch('/records/api/{{ board.id }}/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
