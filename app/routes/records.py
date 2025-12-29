@@ -90,6 +90,7 @@ async def record_create_page(
 
     table_meta = db_manager.get_metadata(board_id, "table") or {}
     columns_data = table_meta.get("columns", [])
+    create_edit_config = db_manager.get_metadata(board_id, "create_edit")
 
     return request.app.state.templates.TemplateResponse(
         "record/create.html",
@@ -97,7 +98,9 @@ async def record_create_page(
             "request": request,
             "user": user,
             "board": board_info,
-            "columns": columns_data
+            "columns": columns_data,
+            "table_meta": table_meta,
+            "create_edit_config": create_edit_config
         }
     )
 

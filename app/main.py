@@ -90,11 +90,13 @@ def add_routes(app: FastAPI):
     from app.routes.board import router as board_router
     from app.routes.records import router as records_router
     from app.routes.checker import router as checker_router
+    from app.routes.files import router as files_router
 
     app.include_router(home_router)
     app.include_router(board_router) # prefix is defined in board.py
     app.include_router(records_router) # prefix is defined in records.py
     app.include_router(checker_router)
+    app.include_router(files_router)
 
 
 def add_events(app: FastAPI):

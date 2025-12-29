@@ -47,11 +47,11 @@
             {% for item in meta_data_list %}
             <div class="border rounded-lg overflow-hidden">
                 <div class="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
-                    <span class="font-bold text-indigo-700 font-mono">{{ item.key }}</span>
+                    <span class="font-bold text-indigo-700 font-mono">{{ item.name }}</span>
                     <span class="text-xs text-gray-500">Updated: {{ item.updated_at }}</span>
                 </div>
                 <div class="p-4 bg-slate-50 overflow-x-auto">
-                    <pre class="text-xs sm:text-sm font-mono text-gray-800 whitespace-pre-wrap">{{ item.data }}</pre>
+                    <pre class="text-xs sm:text-sm font-mono text-gray-800 whitespace-pre-wrap">{{ item.meta }}</pre>
                 </div>
             </div>
             {% endfor %}

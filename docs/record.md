@@ -13,4 +13,15 @@
 - view : 게시물 조회
 - list : 게시물 목록
 
+## 참조
+
+- autoboard_ddl.sql
+- `meta_data` 테이블의 name column은 `table`, `list`,`create_edit`, `view` 으로 정의되어 있다.
+- meta_data순서가 `table`, `list`, `create_edit`, `view` 순으로
+
 ## 새로운 게시물 (create)
+
+- meta_data의 `table`, `create_edit` 을 기반으로 새로운 게시물 생성
+- `table`의 is_file_attach가 true이면 파일 첨부 기능 추가
+- `create_edit`의 fields 를 따라서 입력을 받는 html을 생성한다. (jinja2 template)
+- templates/record/create.html을 기반으로 새로운 게시물 생성

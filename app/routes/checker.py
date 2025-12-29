@@ -35,26 +35,30 @@ async def check_board(
     
     # 2. Meta Data (All rows for this board)
     cursor = conn.cursor()
-    cursor.execute("SELECT key, data, created_at, updated_at FROM meta_data WHERE board_id = ? ORDER BY key", (board_id,))
+    cursor.execute("SELECT name, meta, created_at, updated_at FROM meta_data WHERE board_id = ? ORDER BY name", (board_id,))
     meta_rows = cursor.fetchall()
 
     meta_data_list = []
     for row in meta_rows:
-        key = row[0]
-        data_str = row[1]
+        name = row[0]
+        meta_str = row[1]
         try:
             # Try to parse JSON for pretty printing
-            data_json = json.loads(data_str)
-            data_pretty = json.dumps(data_json, indent=4, ensure_ascii=False)
+            meta_json = json.loads(meta_str)
+            meta_pretty = json.dumps(meta_json, indent=4, ensure_ascii=False)
         except:
-            data_pretty = data_str
+            meta_pretty = meta_str
 
         meta_data_list.append({
-            "key": key,
-            "data": data_pretty,
+            "name": name,
+            "meta": meta_pretty,
             "created_at": row[2],
             "updated_at": row[3]
         })
+
+    # 정해진 순서대로 정렬 (table -> list -> create_edit -> view)
+    sort_order = {"table": 1, "list": 2, "create_edit": 3, "view": 4}
+    meta_data_list.sort(key=lambda x: sort_order.get(x["name"], 99))
 
     return request.app.state.templates.TemplateResponse(
         "checker.html",
