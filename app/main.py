@@ -88,9 +88,11 @@ def add_routes(app: FastAPI):
     # 라우터 import는 여기서
     from app.routes.home import router as home_router
     from app.routes.board import router as board_router
-    
+    from app.routes.records import router as records_router
+
     app.include_router(home_router)
     app.include_router(board_router) # prefix is defined in board.py
+    app.include_router(records_router) # prefix is defined in records.py
 
 
 def add_events(app: FastAPI):

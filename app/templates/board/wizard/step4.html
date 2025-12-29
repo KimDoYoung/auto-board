@@ -41,7 +41,7 @@
             </div>
 
             <!-- Add Section Button -->
-            <button onclick="viewStep4.addSection()"
+            <button type="button" onclick="viewStep4.addSection()"
                 class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2 mb-8">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -67,22 +67,13 @@
             </div>
         </div>
 
-        <!-- Preview Section -->
-        <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
-            <h3 class="text-xl font-bold text-[#1a1a2e] mb-4 border-b pb-3">JSON 미리보기</h3>
-            <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-xs font-mono" id="jsonPreview">
-{
-  "display_fields": []
-}</pre>
-        </div>
-
         <!-- Navigation Buttons -->
         <div class="flex justify-between gap-4">
             <a href="/boards/new/step3/{{ board.id }}"
                 class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
                 이전 단계
             </a>
-            <button onclick="viewStep4.submit()"
+            <button type="button" onclick="viewStep4.submit()"
                 class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
                 마무리 (완료)
             </button>
@@ -134,7 +125,6 @@ const viewStep4 = {
             this.populateFieldsFromColumns();
         }
 
-        this.updateJsonPreview();
         console.log('[STEP4-INIT-3] ✓ 초기화 완료');
     },
 
@@ -147,7 +137,6 @@ const viewStep4 = {
             const section = field.section || 'default';
             if (!sectionMap[section]) {
                 sectionMap[section] = {
-                    title: field.section_title || '',
                     fields: []
                 };
             }
@@ -159,12 +148,6 @@ const viewStep4 = {
         Object.entries(sectionMap).forEach(([sectionId, sectionData]) => {
             console.log(`[STEP4-INIT-2-2] 섹션 추가: ${sectionId || 'default'}`);
             this.addSection();
-
-            const sectionEl = document.querySelector(`[data-section-index="${this.sectionCount}"]`);
-            if (sectionEl && sectionData.title) {
-                sectionEl.querySelector('.section-title').value = sectionData.title;
-                console.log(`[STEP4-INIT-2-2-1] 섹션 제목: ${sectionData.title}`);
-            }
 
             // 섹션의 필드들 추가
             sectionData.fields.forEach((fieldData, fieldIdx) => {
@@ -429,22 +412,11 @@ const viewStep4 = {
         section.dataset.sectionIndex = this.sectionCount;
 
         section.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex-1">
-                    <label class="block text-gray-700 font-medium text-sm mb-2">섹션 제목 (선택)</label>
-                    <input type="text" class="section-title w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                        placeholder="예: 기본 정보, 상세 내용, 메타정보">
-                </div>
-                <button onclick="viewStep4.removeSection(${this.sectionCount})" class="text-red-600 hover:text-red-700 font-semibold text-sm mt-6">
-                    섹션 삭제
-                </button>
-            </div>
-
             <div class="space-y-3" data-section-fields="${this.sectionCount}">
                 <!-- Fields will be added here -->
             </div>
 
-            <button onclick="viewStep4.addField(${this.sectionCount})"
+            <button type="button" onclick="viewStep4.addField(${this.sectionCount})"
                 class="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -474,6 +446,9 @@ const viewStep4 = {
         const defaultDisplayType = columnData ? this.getDefaultDisplayType(columnData.data_type) : 'text';
 
         field.innerHTML = `
+            <!-- 필드 이름 (숨겨진) -->
+            <input type="hidden" class="field-name" value="${columnData ? columnData.name : ''}">
+
             <!-- 필드 카드 헤더 -->
             <div class="flex justify-between items-start gap-3 mb-4 pb-3 border-b">
                 <div class="flex-1">
@@ -580,10 +555,6 @@ const viewStep4 = {
         const displayTypeSelect = field.querySelector('.field-display-type');
         displayTypeSelect.value = defaultDisplayType;
         displayTypeSelect.dispatchEvent(new Event('change'));
-
-        // Update preview on field change
-        field.addEventListener('change', () => this.updateJsonPreview());
-        field.addEventListener('input', () => this.updateJsonPreview());
 
         console.log(`[STEP4-INIT-ADD-FIELD] 필드 추가됨: ${columnData ? columnData.name : 'unknown'} (index: ${fieldIndex})`);
     },
@@ -758,141 +729,44 @@ const viewStep4 = {
                 </div>
             `;
         }
-
-        // Re-attach change listeners
-        optionsContainer.addEventListener('change', () => this.updateJsonPreview());
-        optionsContainer.addEventListener('input', () => this.updateJsonPreview());
     },
 
     removeField(button) {
         button.closest('.field-card').remove();
-        this.updateJsonPreview();
-    },
-
-    removeSection(sectionIndex) {
-        document.querySelector(`[data-section-index="${sectionIndex}"]`).remove();
-        this.updateJsonPreview();
-    },
-
-    updateJsonPreview() {
-        const displayFields = [];
-
-        document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
-            const sectionIndex = sectionEl.dataset.sectionIndex;
-            const sectionTitle = sectionEl.querySelector('.section-title').value.trim() || null;
-
-            sectionEl.querySelectorAll('.field-card:not(.section-header)').forEach(fieldEl => {
-                const fieldName = fieldEl.querySelector('.field-name').value.trim();
-                const fieldLabel = fieldEl.querySelector('.field-label').value.trim();
-                const displayType = fieldEl.querySelector('.field-display-type').value;
-                const width = fieldEl.querySelector('.field-width').value.trim() || null;
-                const inlineGroup = fieldEl.querySelector('.field-inline-group').value.trim() || null;
-                const fullWidth = fieldEl.querySelector('.field-full-width').checked;
-                const hideLabel = fieldEl.querySelector('.field-hide-label').checked;
-                const styleClass = fieldEl.querySelector('.field-style-class').value || null;
-                const order = displayFields.length + 1;
-
-                if (!fieldName) return;
-
-                const field = {
-                    name: fieldName,
-                    label: fieldLabel || fieldName,
-                    display_type: displayType,
-                    order: order,
-                    ...(width && { width }),
-                    ...(inlineGroup && { inline_group: inlineGroup }),
-                    ...(fullWidth && { full_width: true }),
-                    ...(hideLabel && { hide_label: true }),
-                    ...(styleClass && { style_class: styleClass }),
-                    ...(sectionTitle && { section: `section_${sectionIndex}`, section_title: sectionTitle })
-                };
-
-                // Add display type specific options
-                if (displayType === 'date') {
-                    const format = fieldEl.querySelector('.field-format')?.value.trim();
-                    if (format) field.format = format;
-                } else if (displayType === 'datetime') {
-                    const format = fieldEl.querySelector('.field-format')?.value.trim();
-                    if (format) field.format = format;
-                    const relative = fieldEl.querySelector('.field-relative')?.checked;
-                    if (relative) field.relative = true;
-                } else if (displayType === 'stars') {
-                    const maxStars = fieldEl.querySelector('.field-max-stars')?.value;
-                    if (maxStars) field.max_stars = parseInt(maxStars);
-                    const showNumber = fieldEl.querySelector('.field-show-number')?.checked;
-                    if (showNumber) field.show_number = true;
-                } else if (displayType === 'currency') {
-                    const currencyCode = fieldEl.querySelector('.field-currency-code')?.value.trim();
-                    if (currencyCode) field.currency_code = currencyCode;
-                    const decimalPlaces = fieldEl.querySelector('.field-decimal-places')?.value;
-                    if (decimalPlaces !== undefined) field.decimal_places = parseInt(decimalPlaces);
-                    const separator = fieldEl.querySelector('.field-thousands-separator')?.checked;
-                    if (separator) field.thousands_separator = true;
-                } else if (displayType === 'boolean') {
-                    const trueText = fieldEl.querySelector('.field-true-text')?.value.trim();
-                    if (trueText) field.true_text = trueText;
-                    const falseText = fieldEl.querySelector('.field-false-text')?.value.trim();
-                    if (falseText) field.false_text = falseText;
-                    const trueClass = fieldEl.querySelector('.field-true-class')?.value.trim();
-                    if (trueClass) field.true_class = trueClass;
-                    const falseClass = fieldEl.querySelector('.field-false-class')?.value.trim();
-                    if (falseClass) field.false_class = falseClass;
-                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
-                    if (showIcon) field.show_icon = true;
-                } else if (displayType === 'badge') {
-                    const colorMap = fieldEl.querySelector('.field-badge-color-map')?.value.trim();
-                    if (colorMap) {
-                        try {
-                            field.badge_color_map = JSON.parse(colorMap);
-                        } catch (e) {
-                            // Invalid JSON, skip
-                        }
-                    }
-                } else if (displayType === 'html') {
-                    const sanitize = fieldEl.querySelector('.field-sanitize')?.checked;
-                    if (sanitize) field.sanitize = true;
-                } else if (displayType === 'list') {
-                    const displayAs = fieldEl.querySelector('.field-display-as')?.value;
-                    if (displayAs) field.display_as = displayAs;
-                    const separator = fieldEl.querySelector('.field-separator')?.value;
-                    if (separator) field.separator = separator;
-                    const hideIfEmpty = fieldEl.querySelector('.field-hide-if-empty')?.checked;
-                    if (hideIfEmpty) field.hide_if_empty = true;
-                } else if (displayType === 'file_link') {
-                    const showSize = fieldEl.querySelector('.field-show-size')?.checked;
-                    if (showSize) field.show_size = true;
-                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
-                    if (showIcon) field.show_icon = true;
-                    const download = fieldEl.querySelector('.field-download')?.checked;
-                    if (download) field.download = true;
-                }
-
-                displayFields.push(field);
-            });
-        });
-
-        const jsonData = { display_fields: displayFields };
-        document.getElementById('jsonPreview').textContent = JSON.stringify(jsonData, null, 2);
     },
 
     getFormData() {
         const displayFields = [];
 
         document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
-            const sectionIndex = sectionEl.dataset.sectionIndex;
-            const sectionTitle = sectionEl.querySelector('.section-title').value.trim() || null;
-
             sectionEl.querySelectorAll('.field-card:not(.section-header)').forEach(fieldEl => {
-                const fieldName = fieldEl.querySelector('.field-name').value.trim();
+                const fieldNameEl = fieldEl.querySelector('.field-name');
+                if (!fieldNameEl) return;
+
+                const fieldName = fieldNameEl.value?.trim();
                 if (!fieldName) return;
 
-                const fieldLabel = fieldEl.querySelector('.field-label').value.trim();
-                const displayType = fieldEl.querySelector('.field-display-type').value;
-                const width = fieldEl.querySelector('.field-width').value.trim() || null;
-                const inlineGroup = fieldEl.querySelector('.field-inline-group').value.trim() || null;
-                const fullWidth = fieldEl.querySelector('.field-full-width').checked;
-                const hideLabel = fieldEl.querySelector('.field-hide-label').checked;
-                const styleClass = fieldEl.querySelector('.field-style-class').value || null;
+                const fieldLabelEl = fieldEl.querySelector('.field-label');
+                const fieldLabel = fieldLabelEl?.value?.trim() || '';
+
+                const displayTypeEl = fieldEl.querySelector('.field-display-type');
+                const displayType = displayTypeEl?.value || 'text';
+
+                const widthEl = fieldEl.querySelector('.field-width');
+                const width = widthEl?.value?.trim() || null;
+
+                const inlineGroupEl = fieldEl.querySelector('.field-inline-group');
+                const inlineGroup = inlineGroupEl?.value?.trim() || null;
+
+                const fullWidthEl = fieldEl.querySelector('.field-full-width');
+                const fullWidth = fullWidthEl?.checked || false;
+
+                const hideLabelEl = fieldEl.querySelector('.field-hide-label');
+                const hideLabel = hideLabelEl?.checked || false;
+
+                const styleClassEl = fieldEl.querySelector('.field-style-class');
+                const styleClass = styleClassEl?.value || null;
+
                 const order = displayFields.length + 1;
 
                 const field = {
@@ -904,8 +778,7 @@ const viewStep4 = {
                     ...(inlineGroup && { inline_group: inlineGroup }),
                     ...(fullWidth && { full_width: true }),
                     ...(hideLabel && { hide_label: true }),
-                    ...(styleClass && { style_class: styleClass }),
-                    ...(sectionTitle && { section: `section_${sectionIndex}`, section_title: sectionTitle })
+                    ...(styleClass && { style_class: styleClass })
                 };
 
                 // Add display type specific options

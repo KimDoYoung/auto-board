@@ -67,7 +67,7 @@
         <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 class="text-2xl font-bold text-[#1a1a2e]">항목(컬럼) 정의</h2>
-                <button onclick="wizardStep1.addColumn()"
+                <button type="button" onclick="wizardStep1.addColumn()"
                     class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -112,7 +112,7 @@
             <a href="/boards" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-bold transition-colors">
                 취소
             </a>
-            <button onclick="wizardStep1.submit()"
+            <button type="button" onclick="wizardStep1.submit()"
                 class="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg transform active:scale-95 transition-all">
                 다음 단계 (목록 설정)
             </button>
@@ -125,25 +125,37 @@ const wizardStep1 = {
     columnCount: 0,
     boardId: null,
 
-    addColumn(data = null) {
+    addColumn(data = null, isExisting = false) {
         this.columnCount++;
         const tbody = document.getElementById('columnsBody');
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
         row.dataset.columnIndex = this.columnCount;
+        row.dataset.isExisting = isExisting; // 기존 항목인지 표시
 
         // 데이터가 있으면 기존 값으로 채우기
         const label = data ? data.label : '';
         const dataType = data ? data.data_type : 'string';
         const comment = data ? (data.comment || '') : '';
 
+        // 기존 항목이면 입력 비활성화
+        const inputDisabled = isExisting ? 'disabled' : '';
+        const selectDisabled = isExisting ? 'disabled' : '';
+
+        // 기존 항목이 아닐 때만 삭제/이동 버튼 표시
+        const actionButtons = isExisting ? '' : `
+                <button type="button" onclick="wizardStep1.moveColumnUp(${this.columnCount})" class="px-2 py-1 text-indigo-600 hover:text-indigo-700 font-semibold text-sm hover:bg-indigo-50 rounded" title="위로">↑</button>
+                <button type="button" onclick="wizardStep1.moveColumnDown(${this.columnCount})" class="px-2 py-1 text-indigo-600 hover:text-indigo-700 font-semibold text-sm hover:bg-indigo-50 rounded" title="아래로">↓</button>
+                <button type="button" onclick="wizardStep1.removeColumn(${this.columnCount})" class="px-2 py-1 text-red-600 hover:text-red-700 font-semibold text-sm hover:bg-red-50 rounded" title="삭제">✕</button>
+        `;
+
         row.innerHTML = `
             <td class="py-3 px-4 text-gray-500">${this.columnCount}</td>
             <td class="py-3 px-4">
-                <input type="text" class="col-label w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 제목" value="${label}">
+                <input type="text" class="col-label w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 제목" value="${label}" ${inputDisabled}>
             </td>
             <td class="py-3 px-4">
-                <select class="col-type w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                <select class="col-type w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-sm" ${selectDisabled}>
                     <option value="string" ${dataType === 'string' ? 'selected' : ''}>문자열</option>
                     <option value="text" ${dataType === 'text' ? 'selected' : ''}>문장</option>
                     <option value="integer" ${dataType === 'integer' ? 'selected' : ''}>정수</option>
@@ -154,12 +166,10 @@ const wizardStep1 = {
                 </select>
             </td>
             <td class="py-3 px-4">
-                <input type="text" class="col-comment w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 기준일자" value="${comment}">
+                <input type="text" class="col-comment w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="예: 기준일자" value="${comment}" ${inputDisabled}>
             </td>
             <td class="py-3 px-4 text-center space-x-1 flex justify-center">
-                <button type="button" onclick="wizardStep1.moveColumnUp(${this.columnCount})" class="px-2 py-1 text-indigo-600 hover:text-indigo-700 font-semibold text-sm hover:bg-indigo-50 rounded" title="위로">↑</button>
-                <button type="button" onclick="wizardStep1.moveColumnDown(${this.columnCount})" class="px-2 py-1 text-indigo-600 hover:text-indigo-700 font-semibold text-sm hover:bg-indigo-50 rounded" title="아래로">↓</button>
-                <button type="button" onclick="wizardStep1.removeColumn(${this.columnCount})" class="px-2 py-1 text-red-600 hover:text-red-700 font-semibold text-sm hover:bg-red-50 rounded" title="삭제">✕</button>
+                ${actionButtons}
             </td>
         `;
         tbody.appendChild(row);
@@ -296,7 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 기존 컬럼 데이터가 있으면 로드, 없으면 빈 컬럼 하나 추가
     if (columnsData && columnsData.length > 0) {
         columnsData.forEach(colData => {
-            wizardStep1.addColumn(colData);
+            // 수정 모드인 경우 isExisting=true로 표시
+            wizardStep1.addColumn(colData, !!boardId);
         });
     } else {
         wizardStep1.addColumn();
