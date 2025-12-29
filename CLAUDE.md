@@ -10,6 +10,8 @@ Auto-Board is a personal metadata-driven record management system. It allows use
 
 This is a single-user application with no external interfaces, combining FastAPI backend with Jinja2 templating and Alpine.js/TailwindCSS frontend.
 
+- board.py에 기술된 api의 결과물인 json과  records.py의 최종 결과물 html은 sync되어야한다.
+
 ## Technology Stack
 
 **Backend:**

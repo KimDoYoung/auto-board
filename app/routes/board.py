@@ -45,69 +45,74 @@ async def list_boards(
     )
 
 # ============================================================================
-# Record Pages (HTML Rendering)
+# Board List with Pagination and Search
 # ============================================================================
 
-@router.get("/{board_id}/records", response_class=HTMLResponse)
-async def record_list_page(
+@router.get("/list", response_class=HTMLResponse)
+async def list_boards_paginated(
     request: Request,
-    board_id: int,
+    page: int = 1,
+    page_size: int = 10,
+    search: Optional[str] = None,
     user: User = Depends(get_current_user_from_cookie),
     conn: sqlite3.Connection = Depends(get_db_connection)
 ):
-    """기록 목록 페이지"""
+    """보드 목록 조회 (페이징, 검색 포함)"""
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    db_manager = DBManager(conn)
-    board_info = db_manager.get_board_info(board_id)
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = 10
 
-    if not board_info:
-        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
+    logger.info(f"[LIST-PAGINATED] page={page}, page_size={page_size}, search={search}")
 
-    table_meta = db_manager.get_metadata(board_id, "table") or {}
-    columns_data = table_meta.get("columns", [])
+    cursor = conn.cursor()
+
+    # 검색 쿼리 빌드
+    where_clause = ""
+    params = []
+    if search and search.strip():
+        where_clause = "WHERE name LIKE ? OR note LIKE ?"
+        search_pattern = f"%{search}%"
+        params = [search_pattern, search_pattern]
+        logger.info(f"[LIST-PAGINATED] 검색어: {search}")
+
+    # 전체 개수 조회
+    count_sql = f"SELECT COUNT(*) FROM boards {where_clause}"
+    cursor.execute(count_sql, params)
+    total_count = cursor.fetchone()[0]
+    logger.info(f"[LIST-PAGINATED] 총 보드 수: {total_count}")
+
+    # 페이징 계산
+    total_pages = (total_count + page_size - 1) // page_size
+    offset = (page - 1) * page_size
+
+    # 데이터 조회
+    sql = f"""
+        SELECT id, name, note, physical_table_name, created_at, updated_at 
+        FROM boards 
+        {where_clause}
+        ORDER BY updated_at DESC 
+        LIMIT ? OFFSET ?
+    """
+    cursor.execute(sql, params + [page_size, offset])
+    boards = [dict(row) for row in cursor.fetchall()]
+
+    logger.info(f"[LIST-PAGINATED] ✓ {len(boards)}개 보드 조회 완료")
 
     return request.app.state.templates.TemplateResponse(
-        "record/list.html",
+        "board/list.html",
         {
             "request": request,
             "user": user,
-            "board": board_info,
-            "columns": columns_data
-        }
-    )
-
-
-@router.get("/{board_id}/records/new", response_class=HTMLResponse)
-async def record_create_page(
-    request: Request,
-    board_id: int,
-    user: User = Depends(get_current_user_from_cookie),
-    conn: sqlite3.Connection = Depends(get_db_connection)
-):
-    """새 기록 생성 페이지"""
-    if not user:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-
-    db_manager = DBManager(conn)
-    board_info = db_manager.get_board_info(board_id)
-
-    if not board_info:
-        return RedirectResponse(url="/boards", status_code=status.HTTP_302_FOUND)
-
-    table_meta = db_manager.get_metadata(board_id, "table") or {}
-    columns_data = table_meta.get("columns", [])
-    create_edit_config = db_manager.get_metadata(board_id, "create_edit")
-
-    return request.app.state.templates.TemplateResponse(
-        "record/create.html",
-        {
-            "request": request,
-            "user": user,
-            "board": board_info,
-            "columns": columns_data,
-            "create_edit_config": create_edit_config
+            "boards": boards,
+            "page": page,
+            "page_size": page_size,
+            "total_count": total_count,
+            "total_pages": total_pages,
+            "search": search
         }
     )
 
