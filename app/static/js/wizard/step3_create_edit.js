@@ -16,8 +16,8 @@ const dataTypeLabels = {
     'datetime': '날짜시간'
 };
 
-// 엘리먼트 타입 한글 매핑
-const elementTypeLabels = {
+// 엘리먼트 타입 한글 매핑 (label for elements, not element_type)
+const elementLabels = {
     'input': '입력필드',
     'textarea': '텍스트영역',
     'select': '선택상자',
@@ -27,8 +27,24 @@ const elementTypeLabels = {
     'range': '범위선택'
 };
 
-// 데이터 타입별 사용 가능한 엘리먼트 타입
-const elementTypesByDataType = {
+// element_type의 한글 레이블 (input의 type 속성, select의 mode 등)
+const elementTypeValueLabels = {
+    'text': '텍스트',
+    'date': '날짜선택',
+    'number': '숫자',
+    'email': '이메일',
+    'tel': '전화번호',
+    'time': '시간',
+    'plain': '일반텍스트',
+    'single': '단일선택',
+    'toggle': '토글',
+    'slider': '슬라이더',
+    'file': '파일',
+    'html': 'HTML'
+};
+
+// 데이터 타입별 사용 가능한 엘리먼트
+const elementsByDataType = {
     'string': ['input', 'select', 'range', 'file'],
     'text': ['textarea', 'select', 'html_editor'],
     'integer': ['input', 'range'],
@@ -38,18 +54,62 @@ const elementTypesByDataType = {
     'datetime': ['input']
 };
 
+// 엘리먼트별 사용 가능한 element_type
+const elementTypesByElement = {
+    'input': ['text', 'date', 'number', 'email', 'tel', 'time'],
+    'textarea': ['plain'],
+    'select': ['single'],
+    'checkbox': ['toggle'],
+    'range': ['slider'],
+    'file': ['file'],
+    'html_editor': ['html']
+};
+
+// 데이터 타입별 기본 엘리먼트
+const defaultElementByDataType = {
+    'string': 'input',
+    'text': 'textarea',
+    'integer': 'input',
+    'float': 'input',
+    'boolean': 'checkbox',
+    'ymd': 'input',
+    'datetime': 'input'
+};
+
+// 엘리먼트별 기본 element_type
+const defaultElementTypeByElement = {
+    'input': 'text',
+    'textarea': 'plain',
+    'select': 'single',
+    'checkbox': 'toggle',
+    'range': 'slider',
+    'file': 'file',
+    'html_editor': 'html'
+};
+
+// 데이터 타입별 기본 element_type (element 선택 후 자동 설정)
+const defaultElementTypeByDataType = {
+    'string': 'text',
+    'text': 'plain',
+    'integer': 'number',
+    'float': 'number',
+    'boolean': 'toggle',
+    'ymd': 'date',
+    'datetime': 'text'
+};
+
 const wizardStep3 = {
     fieldCount: 0,
 
     // 엘리먼트 타입 드롭다운 동적 채우기
     populateElementTypes(selectElement, dataType) {
         selectElement.innerHTML = '';
-        const allowedTypes = elementTypesByDataType[dataType] || [];
+        const allowedElements = elementsByDataType[dataType] || [];
 
-        allowedTypes.forEach(type => {
+        allowedElements.forEach(element => {
             const option = document.createElement('option');
-            option.value = type;
-            option.textContent = elementTypeLabels[type] || type;
+            option.value = element;
+            option.textContent = elementLabels[element] || element;
             selectElement.appendChild(option);
         });
     },
@@ -185,6 +245,12 @@ const wizardStep3 = {
         // 엘리먼트 타입 드롭다운 동적 채우기
         const selectElement = field.querySelector('.field-element-type');
         this.populateElementTypes(selectElement, columnInfo.data_type);
+
+        // [1] 데이터 타입에 따라 기본 엘리먼트 설정
+        const defaultElement = defaultElementByDataType[columnInfo.data_type] || elementsByDataType[columnInfo.data_type]?.[0];
+        if (defaultElement && selectElement.querySelector(`option[value="${defaultElement}"]`)) {
+            selectElement.value = defaultElement;
+        }
 
         // 조건부 UI 업데이트
         this.updateFieldOptions(fieldIndex);
@@ -356,7 +422,8 @@ const wizardStep3 = {
                 label: columnInfo ? columnInfo.label : name,
                 data_type: dataType,
                 element: element,
-                element_type: element,
+                // element_type는 data_type 맵을 우선 사용 (더 정확함), 없으면 element 맵 사용
+                element_type: defaultElementTypeByDataType[dataType] || defaultElementTypeByElement[element] || 'text',
                 required: fieldEl.querySelector('.field-required').checked,
                 width: fieldEl.querySelector('.field-width').value || '100%',
                 order: index + 1  // 화면 상 순서대로 order 설정
@@ -366,6 +433,7 @@ const wizardStep3 = {
                 name: fieldData.name,
                 label: fieldData.label,
                 element: fieldData.element,
+                element_type: fieldData.element_type,
                 required: fieldData.required,
                 width: fieldData.width
             });
@@ -439,7 +507,7 @@ const wizardStep3 = {
                 const htmlEditorCheckbox = fieldEl.querySelector('.field-use-html-editor');
                 if (htmlEditorCheckbox && htmlEditorCheckbox.checked) {
                     fieldData.element = 'html_editor';
-                    fieldData.element_type = 'html_editor';
+                    fieldData.element_type = 'html';
                     console.log(`[2-${index}] ✓ HTML Editor 활성화됨`);
                 }
             }

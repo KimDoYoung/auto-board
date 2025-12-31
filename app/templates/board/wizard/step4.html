@@ -36,18 +36,9 @@
                 <p>기록을 상세보기할 때 각 필드를 어떻게 표시할지 설정합니다. 필드의 순서, 그룹핑, 스타일, 포맷을 지정할 수 있습니다.</p>
             </div>
 
-            <div id="fieldsContainer" class="space-y-6 mb-8">
-                <!-- Fields will be dynamically generated here -->
+            <div id="fieldsContainer" class="space-y-5 mb-8">
+                <!-- Column cards will be dynamically generated here -->
             </div>
-
-            <!-- Add Section Button -->
-            <button type="button" onclick="wizardStep4.addSection()"
-                class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-medium text-sm transition-colors flex items-center gap-2 mb-8">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                섹션 추가
-            </button>
 
             <!-- Field Type Reference -->
             <div class="bg-gray-50 p-4 rounded-lg text-sm text-gray-600">
@@ -83,10 +74,46 @@
 
 <style>
 .field-card {
-    @apply bg-white p-4 rounded-lg border border-gray-200 space-y-3;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 200ms ease;
 }
+
+.field-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 얼룩말 패턴: 홀수 카드 - 흰색 */
+.field-card:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* 얼룩말 패턴: 짝수 카드 - 연한 파란색 */
+.field-card:nth-child(even) {
+    background-color: #eef2ff;
+}
+
+/* 카드 헤더 스타일 강화 */
+.field-card > div:nth-child(2) {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #d1d5db;
+}
+
 .field-card.section-header {
-    @apply bg-gray-50 border-gray-300;
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/* 자식 요소들 사이의 간격 */
+.field-card > div {
+    margin-bottom: 0.75rem;
+}
+
+.field-card > div:last-child {
+    margin-bottom: 0;
 }
 </style>
 

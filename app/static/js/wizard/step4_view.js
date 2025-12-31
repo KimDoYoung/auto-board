@@ -13,8 +13,7 @@ console.log('[STEP4-INIT-0-2] 컬럼 데이터:', columnsData);
 console.log('[STEP4-INIT-0-3] 기존 view config:', viewConfig);
 
 const wizardStep4 = {
-    sectionCount: 0,
-    fieldCount: {},
+    fieldCount: 0,
     columns: columnsData,
     isEditMode: false,
 
@@ -30,8 +29,6 @@ const wizardStep4 = {
         } else {
             console.log('[STEP4-INIT-2] CREATE MODE - 새로운 설정 생성');
             this.isEditMode = false;
-            // Initialize with default section
-            this.addSection();
             this.populateFieldsFromColumns();
         }
 
@@ -41,88 +38,81 @@ const wizardStep4 = {
     loadExistingConfig() {
         console.log('[STEP4-INIT-2-1] 기존 view 설정 로드 시작');
 
-        // 섹션별로 필드를 그룹화
         const displayFields = viewConfig.columns || viewConfig.display_fields || [];
-        const sectionMap = {};
-        displayFields.forEach(field => {
-            const section = field.section || 'default';
-            if (!sectionMap[section]) {
-                sectionMap[section] = {
-                    fields: []
-                };
+        displayFields.forEach((fieldData, fieldIdx) => {
+            console.log(`[STEP4-INIT-2-${fieldIdx}] 필드 생성: ${fieldData.name}`);
+
+            // 필드 UI 생성
+            this.addField(fieldData);
+
+            // 생성된 마지막 필드 찾기
+            const fieldEl = document.getElementById('fieldsContainer').lastElementChild;
+            if (!fieldEl) {
+                console.log(`[STEP4-INIT-2-${fieldIdx}] ❌ 필드 엘리먼트를 찾을 수 없음`);
+                return;
             }
-            sectionMap[section].fields.push(field);
-            console.log(`[STEP4-INIT-2-1-${Object.keys(sectionMap).length}] 필드 로드: ${field.name} (섹션: ${section})`);
-        });
 
-        // 각 섹션 추가
-        Object.entries(sectionMap).forEach(([sectionId, sectionData]) => {
-            console.log(`[STEP4-INIT-2-2] 섹션 추가: ${sectionId || 'default'}`);
-            this.addSection();
+            // 기본 필드 설정
+            const labelInput = fieldEl.querySelector('.field-label');
+            if (labelInput) {
+                labelInput.value = fieldData.label || fieldData.name;
+                console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 라벨: ${fieldData.label}`);
+            }
 
-            // 섹션의 필드들 추가
-            sectionData.fields.forEach((fieldData, fieldIdx) => {
-                console.log(`[STEP4-INIT-2-3-${fieldIdx}] 필드 UI 생성: ${fieldData.name}`);
-                this.addField(this.sectionCount, fieldData);
+            const displayTypeSelect = fieldEl.querySelector('.field-display-type');
+            if (displayTypeSelect) {
+                displayTypeSelect.value = fieldData.display_type;
+                console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 표시타입: ${fieldData.display_type}`);
+                // 조건부 옵션 생성
+                displayTypeSelect.dispatchEvent(new Event('change'));
+            }
 
-                const fieldsContainer = document.querySelector(`[data-section-fields="${this.sectionCount}"]`);
-                const fieldEl = fieldsContainer.lastElementChild;
-
-                if (fieldEl) {
-                    // 기본 필드 설정
-                    const nameSelect = fieldEl.querySelector('.field-name');
-                    if (nameSelect) {
-                        nameSelect.value = fieldData.name;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 필드명: ${fieldData.name}`);
-                    }
-
-                    const labelInput = fieldEl.querySelector('.field-label');
-                    if (labelInput) {
-                        labelInput.value = fieldData.label || fieldData.name;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 라벨: ${fieldData.label}`);
-                    }
-
-                    const displayTypeSelect = fieldEl.querySelector('.field-display-type');
-                    if (displayTypeSelect) {
-                        displayTypeSelect.value = fieldData.display_type;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 표시타입: ${fieldData.display_type}`);
-                        // 조건부 옵션 생성
-                        displayTypeSelect.dispatchEvent(new Event('change'));
-                    }
-
-                    // 선택적 필드 복원
-                    if (fieldData.width) {
-                        fieldEl.querySelector('.field-width').value = fieldData.width;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 너비: ${fieldData.width}`);
-                    }
-
-                    if (fieldData.inline_group) {
-                        fieldEl.querySelector('.field-inline-group').value = fieldData.inline_group;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 인라인그룹: ${fieldData.inline_group}`);
-                    }
-
-                    if (fieldData.full_width) {
-                        fieldEl.querySelector('.field-full-width').checked = true;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 전체너비: true`);
-                    }
-
-                    if (fieldData.hide_label) {
-                        fieldEl.querySelector('.field-hide-label').checked = true;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 라벨숨기기: true`);
-                    }
-
-                    if (fieldData.style_class) {
-                        fieldEl.querySelector('.field-style-class').value = fieldData.style_class;
-                        console.log(`[STEP4-INIT-2-3-${fieldIdx}] ✓ 스타일: ${fieldData.style_class}`);
-                    }
-
-                    // Display type 별 옵션 복원
-                    this.restoreDisplayTypeOptions(fieldEl, fieldData);
+            // 선택적 필드 복원
+            if (fieldData.width) {
+                const widthInput = fieldEl.querySelector('.field-width');
+                if (widthInput) {
+                    widthInput.value = fieldData.width;
+                    console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 너비: ${fieldData.width}`);
                 }
-            });
+            }
+
+            if (fieldData.inline_group) {
+                const inlineGroupInput = fieldEl.querySelector('.field-inline-group');
+                if (inlineGroupInput) {
+                    inlineGroupInput.value = fieldData.inline_group;
+                    console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 인라인그룹: ${fieldData.inline_group}`);
+                }
+            }
+
+            if (fieldData.full_width) {
+                const fullWidthCheckbox = fieldEl.querySelector('.field-full-width');
+                if (fullWidthCheckbox) {
+                    fullWidthCheckbox.checked = true;
+                    console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 전체너비: true`);
+                }
+            }
+
+            if (fieldData.hide_label) {
+                const hideLabelCheckbox = fieldEl.querySelector('.field-hide-label');
+                if (hideLabelCheckbox) {
+                    hideLabelCheckbox.checked = true;
+                    console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 라벨숨기기: true`);
+                }
+            }
+
+            if (fieldData.style_class) {
+                const styleClassInput = fieldEl.querySelector('.field-style-class');
+                if (styleClassInput) {
+                    styleClassInput.value = fieldData.style_class;
+                    console.log(`[STEP4-INIT-2-${fieldIdx}] ✓ 스타일: ${fieldData.style_class}`);
+                }
+            }
+
+            // Display type 별 옵션 복원
+            this.restoreDisplayTypeOptions(fieldEl, fieldData);
         });
 
-        console.log('[STEP4-INIT-2-4] ✓ 기존 설정 모두 로드 완료');
+        console.log('[STEP4-INIT-2] ✓ 기존 설정 모두 로드 완료');
     },
 
     restoreDisplayTypeOptions(fieldEl, fieldData) {
@@ -286,18 +276,17 @@ const wizardStep4 = {
     },
 
     populateFieldsFromColumns() {
-        console.log('[STEP4-INIT-3-1] populateFieldsFromColumns 시작');
+        console.log('[STEP4-INIT-2-1] populateFieldsFromColumns 시작');
 
         if (this.columns && this.columns.length > 0) {
-            const fieldsContainer = document.querySelector('[data-section-fields="1"]');
-            console.log(`[STEP4-INIT-3-2] 총 ${this.columns.length}개 컬럼 발견`);
+            console.log(`[STEP4-INIT-2-2] 총 ${this.columns.length}개 컬럼 발견`);
 
             this.columns.forEach((col, idx) => {
-                console.log(`[STEP4-INIT-3-3-${idx}] 필드 추가: ${col.name} (${col.label})`);
-                this.addField(1, col);
+                console.log(`[STEP4-INIT-2-3-${idx}] 필드 추가: ${col.name} (${col.label})`);
+                this.addField(col);
             });
 
-            console.log('[STEP4-INIT-3-4] ✓ populateFieldsFromColumns 완료');
+            console.log('[STEP4-INIT-2-4] ✓ populateFieldsFromColumns 완료');
         }
     },
 
@@ -314,34 +303,8 @@ const wizardStep4 = {
         return mapping[dataType] || 'text';
     },
 
-    addSection() {
-        this.sectionCount++;
-        const container = document.getElementById('fieldsContainer');
-
-        const section = document.createElement('div');
-        section.className = 'bg-gray-50 rounded-lg p-6 space-y-4 border border-gray-200';
-        section.dataset.sectionIndex = this.sectionCount;
-
-        section.innerHTML = `
-            <div class="space-y-3" data-section-fields="${this.sectionCount}">
-                <!-- Fields will be added here -->
-            </div>
-
-            <button type="button" onclick="wizardStep4.addField(${this.sectionCount})"
-                class="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                필드 추가
-            </button>
-        `;
-
-        container.appendChild(section);
-        this.fieldCount[this.sectionCount] = 0;
-    },
-
-    addField(sectionIndex, columnData = null) {
-        console.log(`[STEP4-FIELD] addField 호출됨:`, {sectionIndex, columnData});
+    addField(columnData = null) {
+        console.log(`[STEP4-FIELD] addField 호출됨:`, {columnData});
 
         // [1] columnData에 data_type이 없으면 columnsData에서 찾아서 보강
         if (columnData && !columnData.data_type && columnData.name) {
@@ -352,16 +315,15 @@ const wizardStep4 = {
             }
         }
 
-        this.fieldCount[sectionIndex]++;
-        const fieldsContainer = document.querySelector(`[data-section-fields="${sectionIndex}"]`);
+        this.fieldCount++;
+        const fieldsContainer = document.getElementById('fieldsContainer');
 
-        const fieldIndex = this.fieldCount[sectionIndex];
-        const fieldId = `field_${sectionIndex}_${fieldIndex}`;
+        const fieldIndex = this.fieldCount;
+        const fieldId = `field_${fieldIndex}`;
 
         const field = document.createElement('div');
         field.className = 'field-card';
         field.dataset.fieldIndex = fieldIndex;
-        field.dataset.sectionIndex = sectionIndex;
         field.dataset.fieldName = columnData ? columnData.name : '';
 
         // 데이터 타입에 따라 기본 display_type 설정
@@ -467,7 +429,7 @@ const wizardStep4 = {
             </div>
 
             <!-- Display type별 옵션 -->
-            <div id="displayTypeOptions_${sectionIndex}_${fieldIndex}" class="space-y-3 mb-4 p-3 bg-gray-50 rounded-lg">
+            <div id="displayTypeOptions_${fieldIndex}" class="space-y-3 mb-4 p-3 bg-gray-50 rounded-lg">
                 <!-- Display type specific options will be added here -->
             </div>
         `;
@@ -485,9 +447,8 @@ const wizardStep4 = {
     updateDisplayTypeOptions(selectElement) {
         const displayType = selectElement.value;
         const fieldCard = selectElement.closest('.field-card');
-        const sectionIndex = fieldCard.dataset.sectionIndex;
         const fieldIndex = fieldCard.dataset.fieldIndex;
-        const optionsContainer = document.getElementById(`displayTypeOptions_${sectionIndex}_${fieldIndex}`);
+        const optionsContainer = document.getElementById(`displayTypeOptions_${fieldIndex}`);
 
         if (!optionsContainer) return;
 
@@ -661,111 +622,109 @@ const wizardStep4 = {
     getFormData() {
         const displayFields = [];
 
-        document.querySelectorAll('[data-section-index]').forEach(sectionEl => {
-            sectionEl.querySelectorAll('.field-card:not(.section-header)').forEach(fieldEl => {
-                const fieldNameEl = fieldEl.querySelector('.field-name');
-                if (!fieldNameEl) return;
+        document.querySelectorAll('#fieldsContainer > .field-card').forEach(fieldEl => {
+            const fieldNameEl = fieldEl.querySelector('.field-name');
+            if (!fieldNameEl) return;
 
-                const fieldName = fieldNameEl.value?.trim();
-                if (!fieldName) return;
+            const fieldName = fieldNameEl.value?.trim();
+            if (!fieldName) return;
 
-                const fieldLabelEl = fieldEl.querySelector('.field-label');
-                const fieldLabel = fieldLabelEl?.value?.trim() || '';
+            const fieldLabelEl = fieldEl.querySelector('.field-label');
+            const fieldLabel = fieldLabelEl?.value?.trim() || '';
 
-                const displayTypeEl = fieldEl.querySelector('.field-display-type');
-                const displayType = displayTypeEl?.value || 'text';
+            const displayTypeEl = fieldEl.querySelector('.field-display-type');
+            const displayType = displayTypeEl?.value || 'text';
 
-                const widthEl = fieldEl.querySelector('.field-width');
-                const width = widthEl?.value?.trim() || null;
+            const widthEl = fieldEl.querySelector('.field-width');
+            const width = widthEl?.value?.trim() || null;
 
-                const inlineGroupEl = fieldEl.querySelector('.field-inline-group');
-                const inlineGroup = inlineGroupEl?.value?.trim() || null;
+            const inlineGroupEl = fieldEl.querySelector('.field-inline-group');
+            const inlineGroup = inlineGroupEl?.value?.trim() || null;
 
-                const fullWidthEl = fieldEl.querySelector('.field-full-width');
-                const fullWidth = fullWidthEl?.checked || false;
+            const fullWidthEl = fieldEl.querySelector('.field-full-width');
+            const fullWidth = fullWidthEl?.checked || false;
 
-                const hideLabelEl = fieldEl.querySelector('.field-hide-label');
-                const hideLabel = hideLabelEl?.checked || false;
+            const hideLabelEl = fieldEl.querySelector('.field-hide-label');
+            const hideLabel = hideLabelEl?.checked || false;
 
-                const styleClassEl = fieldEl.querySelector('.field-style-class');
-                const styleClass = styleClassEl?.value || null;
+            const styleClassEl = fieldEl.querySelector('.field-style-class');
+            const styleClass = styleClassEl?.value || null;
 
-                const order = displayFields.length + 1;
+            const order = displayFields.length + 1;
 
-                const field = {
-                    name: fieldName,
-                    label: fieldLabel || fieldName,
-                    display_type: displayType,
-                    order: order,
-                    ...(width && { width }),
-                    ...(inlineGroup && { inline_group: inlineGroup }),
-                    ...(fullWidth && { full_width: true }),
-                    ...(hideLabel && { hide_label: true }),
-                    ...(styleClass && { style_class: styleClass })
-                };
+            const field = {
+                name: fieldName,
+                label: fieldLabel || fieldName,
+                display_type: displayType,
+                order: order,
+                ...(width && { width }),
+                ...(inlineGroup && { inline_group: inlineGroup }),
+                ...(fullWidth && { full_width: true }),
+                ...(hideLabel && { hide_label: true }),
+                ...(styleClass && { style_class: styleClass })
+            };
 
-                // Add display type specific options
-                if (displayType === 'date') {
-                    const format = fieldEl.querySelector('.field-format')?.value.trim();
-                    if (format) field.format = format;
-                } else if (displayType === 'datetime') {
-                    const format = fieldEl.querySelector('.field-format')?.value.trim();
-                    if (format) field.format = format;
-                    const relative = fieldEl.querySelector('.field-relative')?.checked;
-                    if (relative) field.relative = true;
-                } else if (displayType === 'stars') {
-                    const maxStars = fieldEl.querySelector('.field-max-stars')?.value;
-                    if (maxStars) field.max_stars = parseInt(maxStars);
-                    const showNumber = fieldEl.querySelector('.field-show-number')?.checked;
-                    if (showNumber) field.show_number = true;
-                } else if (displayType === 'currency') {
-                    const currencyCode = fieldEl.querySelector('.field-currency-code')?.value.trim();
-                    if (currencyCode) field.currency_code = currencyCode;
-                    const decimalPlaces = fieldEl.querySelector('.field-decimal-places')?.value;
-                    if (decimalPlaces !== undefined) field.decimal_places = parseInt(decimalPlaces);
-                    const separator = fieldEl.querySelector('.field-thousands-separator')?.checked;
-                    if (separator) field.thousands_separator = true;
-                } else if (displayType === 'boolean') {
-                    const trueText = fieldEl.querySelector('.field-true-text')?.value.trim();
-                    if (trueText) field.true_text = trueText;
-                    const falseText = fieldEl.querySelector('.field-false-text')?.value.trim();
-                    if (falseText) field.false_text = falseText;
-                    const trueClass = fieldEl.querySelector('.field-true-class')?.value.trim();
-                    if (trueClass) field.true_class = trueClass;
-                    const falseClass = fieldEl.querySelector('.field-false-class')?.value.trim();
-                    if (falseClass) field.false_class = falseClass;
-                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
-                    if (showIcon) field.show_icon = true;
-                } else if (displayType === 'badge') {
-                    const colorMap = fieldEl.querySelector('.field-badge-color-map')?.value.trim();
-                    if (colorMap) {
-                        try {
-                            field.badge_color_map = JSON.parse(colorMap);
-                        } catch (e) {
-                            // Invalid JSON, skip
-                        }
+            // Add display type specific options
+            if (displayType === 'date') {
+                const format = fieldEl.querySelector('.field-format')?.value.trim();
+                if (format) field.format = format;
+            } else if (displayType === 'datetime') {
+                const format = fieldEl.querySelector('.field-format')?.value.trim();
+                if (format) field.format = format;
+                const relative = fieldEl.querySelector('.field-relative')?.checked;
+                if (relative) field.relative = true;
+            } else if (displayType === 'stars') {
+                const maxStars = fieldEl.querySelector('.field-max-stars')?.value;
+                if (maxStars) field.max_stars = parseInt(maxStars);
+                const showNumber = fieldEl.querySelector('.field-show-number')?.checked;
+                if (showNumber) field.show_number = true;
+            } else if (displayType === 'currency') {
+                const currencyCode = fieldEl.querySelector('.field-currency-code')?.value.trim();
+                if (currencyCode) field.currency_code = currencyCode;
+                const decimalPlaces = fieldEl.querySelector('.field-decimal-places')?.value;
+                if (decimalPlaces !== undefined) field.decimal_places = parseInt(decimalPlaces);
+                const separator = fieldEl.querySelector('.field-thousands-separator')?.checked;
+                if (separator) field.thousands_separator = true;
+            } else if (displayType === 'boolean') {
+                const trueText = fieldEl.querySelector('.field-true-text')?.value.trim();
+                if (trueText) field.true_text = trueText;
+                const falseText = fieldEl.querySelector('.field-false-text')?.value.trim();
+                if (falseText) field.false_text = falseText;
+                const trueClass = fieldEl.querySelector('.field-true-class')?.value.trim();
+                if (trueClass) field.true_class = trueClass;
+                const falseClass = fieldEl.querySelector('.field-false-class')?.value.trim();
+                if (falseClass) field.false_class = falseClass;
+                const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
+                if (showIcon) field.show_icon = true;
+            } else if (displayType === 'badge') {
+                const colorMap = fieldEl.querySelector('.field-badge-color-map')?.value.trim();
+                if (colorMap) {
+                    try {
+                        field.badge_color_map = JSON.parse(colorMap);
+                    } catch (e) {
+                        // Invalid JSON, skip
                     }
-                } else if (displayType === 'html') {
-                    const sanitize = fieldEl.querySelector('.field-sanitize')?.checked;
-                    if (sanitize) field.sanitize = true;
-                } else if (displayType === 'list') {
-                    const displayAs = fieldEl.querySelector('.field-display-as')?.value;
-                    if (displayAs) field.display_as = displayAs;
-                    const separator = fieldEl.querySelector('.field-separator')?.value;
-                    if (separator) field.separator = separator;
-                    const hideIfEmpty = fieldEl.querySelector('.field-hide-if-empty')?.checked;
-                    if (hideIfEmpty) field.hide_if_empty = true;
-                } else if (displayType === 'file_link') {
-                    const showSize = fieldEl.querySelector('.field-show-size')?.checked;
-                    if (showSize) field.show_size = true;
-                    const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
-                    if (showIcon) field.show_icon = true;
-                    const download = fieldEl.querySelector('.field-download')?.checked;
-                    if (download) field.download = true;
                 }
+            } else if (displayType === 'html') {
+                const sanitize = fieldEl.querySelector('.field-sanitize')?.checked;
+                if (sanitize) field.sanitize = true;
+            } else if (displayType === 'list') {
+                const displayAs = fieldEl.querySelector('.field-display-as')?.value;
+                if (displayAs) field.display_as = displayAs;
+                const separator = fieldEl.querySelector('.field-separator')?.value;
+                if (separator) field.separator = separator;
+                const hideIfEmpty = fieldEl.querySelector('.field-hide-if-empty')?.checked;
+                if (hideIfEmpty) field.hide_if_empty = true;
+            } else if (displayType === 'file_link') {
+                const showSize = fieldEl.querySelector('.field-show-size')?.checked;
+                if (showSize) field.show_size = true;
+                const showIcon = fieldEl.querySelector('.field-show-icon')?.checked;
+                if (showIcon) field.show_icon = true;
+                const download = fieldEl.querySelector('.field-download')?.checked;
+                if (download) field.download = true;
+            }
 
-                displayFields.push(field);
-            });
+            displayFields.push(field);
         });
 
         return {

@@ -18,7 +18,8 @@
       "Bash(python -m uvicorn:*)",
       "Bash(mkdir:*)",
       "Bash(python:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(node:*)"
     ]
   }
 }

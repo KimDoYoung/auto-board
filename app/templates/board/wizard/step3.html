@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let elementToSet = fieldData.element;
                 let useHtmlEditor = false;
 
-                if (fieldData.element === 'html_editor' && fieldData.element_type === 'html_editor') {
+                if (fieldData.element === 'html_editor' && fieldData.element_type === 'html') {
                     elementToSet = 'textarea';
                     useHtmlEditor = true;
                     console.log(`[2-${fieldIdx}] HTML Editor 감지 - textarea로 변환`);
