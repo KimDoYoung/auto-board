@@ -7,6 +7,7 @@
 
 <div class="p-8 w-4/5 mx-auto" id="appContainer"
     data-board-id="{% if board_id %}{{ board_id }}{% endif %}"
+    data-record-exist="{% if record_exist %}true{% else %}false{% endif %}"
     data-columns='{% if columns %}{{ columns | tojson }}{% else %}[]{% endif %}'
     data-board-meta='{% if board_meta %}{{ board_meta | tojson }}{% else %}{}{% endif %}'>
     <div class="space-y-8">
@@ -96,13 +97,9 @@
             <div class="bg-gray-50 p-4 rounded-lg mb-6 text-sm text-gray-600">
                 <p class="font-semibold mb-2">데이터 타입 설명:</p>
                 <ul class="space-y-1 text-xs">
-                    <li><span class="font-semibold">문자열</span> - 짧은 한 줄의 텍스트 (최대 255자)</li>
-                    <li><span class="font-semibold">문장</span> - 긴 여러 줄의 텍스트</li>
-                    <li><span class="font-semibold">정수</span> - 소수점이 없는 숫자</li>
-                    <li><span class="font-semibold">실수(소수점포함)</span> - 소수점이 있는 숫자</li>
-                    <li><span class="font-semibold">참/거짓</span> - 참(true) 또는 거짓(false)</li>
-                    <li><span class="font-semibold">날짜</span> - YYYY-MM-DD 형식의 날짜</li>
-                    <li><span class="font-semibold">날짜시간</span> - 날짜와 시간을 포함한 데이터</li>
+                    {%- for data_type in data_types %}
+                    <li><span class="font-semibold">{{ data_type.label }}</span> - {{ data_type.description }}</li>
+                    {%- endfor %}
                 </ul>
             </div>
         </div>
@@ -126,6 +123,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('appContainer');
     const boardId = container.dataset.boardId;
+    const recordExist = container.dataset.recordExist === 'true';
     const columnsData = JSON.parse(container.dataset.columns || '[]');
     const boardMeta = JSON.parse(container.dataset.boardMeta || '{}');
 
@@ -137,8 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 기존 컬럼 데이터가 있으면 로드, 없으면 빈 컬럼 하나 추가
     if (columnsData && columnsData.length > 0) {
         columnsData.forEach(colData => {
-            // 수정 모드인 경우 isExisting=true로 표시
-            wizardStep1.addColumn(colData, !!boardId);
+            // record_exist가 true이면 기존 항목을 수정 불가능하게 표시
+            // record_exist가 false이면 기존 항목도 수정 가능
+            wizardStep1.addColumn(colData, recordExist);
         });
     } else {
         wizardStep1.addColumn();

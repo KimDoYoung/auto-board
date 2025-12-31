@@ -1,16 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-프로그램을 실행시켜서 수행 시키기 보다는 번호를 매기면서 한글로 로그를 달아서 성공적인 수행여부를 확인한다.
+이 문서는 Claude Code(claude.ai/code) 에 대한 지침을 제공한다
 
 ## Project Overview
 
-Auto-Board is a personal metadata-driven record management system. It allows users to create custom "boards" (recording types) with user-defined fields/columns, similar to a flexible personal database with a web UI. Examples include diaries, keyboard collections, blood pressure logs, movie reviews, etc.
-
-This is a single-user application with no external interfaces, combining FastAPI backend with Jinja2 templating and Alpine.js/TailwindCSS frontend.
-
-- board.py에 기술된 api의 결과물인 json과  records.py의 최종 결과물 html은 sync되어야한다.
+- 이 프로젝트(auto-board)는 사용자가 자신의 기록물에 대한 스키마를 임의로 설정하고 그 결과를 json으로 만들어서 sqlite table에 저장 한 후 그것을 바탕으로 CRUD를 하도록 한다.
 
 ## Technology Stack
 
@@ -78,7 +72,7 @@ The system uses JSON metadata stored in the `meta_data` table to dynamically con
 
 1. **boards** table: Stores board definitions (name, physical_table_name, note)
 2. **meta_data** table: Stores JSON metadata for each board with different `name` types:
-   - `columns`: Defines the schema/fields for the board (see docs/columns.md)
+   - `table`: Defines the schema/fields for the board (see docs/columns.md)
    - `list`: Defines how to display record lists (see docs/list.md)
    - `view`: Defines how to display individual records (see docs/view.md)
    - `create`/`edit`: Defines forms for creating/editing records
@@ -93,8 +87,9 @@ When a user creates a new board:
 2. Insert columns metadata JSON into `meta_data` table
 3. Generate and execute CREATE TABLE DDL for the physical table based on metadata
 4. Physical tables include auto-generated columns: `id`, `created_at`, `updated_at`
-
-See `app/utils/db_manager.py:DBManager.create_board()` for implementation.
+5. templates/board/wizard/step1~4.html에서 `table`, `list`,`create_edit`,`view`의 meta data (json)을 만든다. 서버단 board.py에서 처리한다.
+6. 5.번의 각각 javascript는 js/wizard/step1~4.js에서 처리한다
+7. templates/record/ 폴더의 create.html, edit.html, list.html,view.html에서 설정된 json에 따라서 CRUD를 수행한다.
 
 ### Configuration System
 
