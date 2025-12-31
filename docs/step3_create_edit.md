@@ -8,7 +8,7 @@
 
 ```json
 {
-  "fields": [
+  "columns": [
     {
       "name": "ymd",
       "label": "날짜",

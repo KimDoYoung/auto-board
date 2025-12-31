@@ -17,7 +17,8 @@
       "Bash(python -m pip:*)",
       "Bash(python -m uvicorn:*)",
       "Bash(mkdir:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

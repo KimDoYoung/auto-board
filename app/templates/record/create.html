@@ -17,7 +17,7 @@
     <!-- Form -->
     <form id="createForm" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
         <div class="space-y-5 sm:space-y-6">
-            {% set fields = create_edit_config.fields if create_edit_config and create_edit_config.fields else columns %}
+            {% set fields = (create_edit_config.columns if create_edit_config and create_edit_config.columns else create_edit_config.fields if create_edit_config and create_edit_config.fields else columns) %}
             
             {% for field in fields %}
             {% set field_name = field.name %}
@@ -86,7 +86,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const boardId = {{ board.id }};
         // Convert Jinja variable to JSON for JS usage
-        const fieldsConfig = {{ (create_edit_config.fields if create_edit_config and create_edit_config.fields else columns) | tojson }};
+        const fieldsConfig = {{ ((create_edit_config.columns if create_edit_config and create_edit_config.columns else create_edit_config.fields if create_edit_config and create_edit_config.fields else columns)) | tojson }};
         
         Records.Create.init(boardId, fieldsConfig);
     });

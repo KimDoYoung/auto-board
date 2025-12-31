@@ -231,7 +231,7 @@ Step 4 로드 (기존 view 메타데이터 있음)
 ```json
 {
   "view": {
-    "display_fields": [
+    "columns": [
       {
         "name": "ymd",
         "label": "작성일",
@@ -283,7 +283,7 @@ populateFieldsFromColumns() 실행
 POST /boards/new/step4/{board_id}
 {
   "view": {
-    "display_fields": [...]
+    "columns": [...]
   }
 }
   ↓

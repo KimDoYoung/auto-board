@@ -5,7 +5,7 @@
 ```json
 {
   "view_mode": "table",
-  "display_columns": [
+  "columns": [
     {
       "name": "ymd",
       "label": "날짜",

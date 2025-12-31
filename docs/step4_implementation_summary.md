@@ -220,7 +220,7 @@ Step 4 제출 (위와 동일)
 
 ```json
 {
-  "display_fields": [
+  "columns": [
     {
       "name": "ymd",
       "label": "작성일",
@@ -299,7 +299,7 @@ Step 4 제출 (위와 동일)
 [STEP4-4] 데이터베이스에 저장 중...
 [STEP4-5] 저장할 JSON (pretty):
 {
-  "display_fields": [
+  "columns": [
     {
       "name": "ymd",
       "label": "작성일",
@@ -359,7 +359,7 @@ Step 4 제출 (위와 동일)
 [STEP4-SUBMIT-4] JSON 전송 준비:
 {
   "view": {
-    "display_fields": [
+    "columns": [
       {
         "name": "ymd",
         "label": "작성일",
@@ -384,7 +384,7 @@ Step 4 제출 (위와 동일)
 
 ```
 [STEP4-INIT-0] Step 4 초기화 시작
-[STEP4-INIT-0-3] 기존 view config: {display_fields: [{name: "ymd", ...}, ...]}
+[STEP4-INIT-0-3] 기존 view config: {columns: [{name: "ymd", ...}, ...]}
 
 [STEP4-INIT-1] init() 실행 중...
 [STEP4-INIT-2] EDIT MODE 감지 - 기존 view 설정 로드

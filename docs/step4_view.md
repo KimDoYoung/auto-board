@@ -37,6 +37,7 @@ FIELD_STYLES = {
 
 ```json
 {
+  "columns": [
     {
       "name": "ymd",
       "label": "작성일",
@@ -146,6 +147,7 @@ FIELD_STYLES = {
       "full_width": true,
       "hide_if_empty": true
     }
+  ]
 }
 
 ```

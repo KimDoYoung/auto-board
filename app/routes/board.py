@@ -478,11 +478,13 @@ async def wizard_step2_submit(
         logger.info(f"[STEP2-2] 전송된 form_data 구조: {list(form_data.keys())}")
 
         # 목록 설정 상세 로깅
+        # Support both old and new keys for backward compatibility
+        columns = list_config.get('columns') or list_config.get('display_columns', [])
         logger.info(f"[STEP2-3] list_config 받음:")
         logger.info(f"     - view_mode: {list_config.get('view_mode', 'N/A')}")
-        logger.info(f"     - display_columns: {len(list_config.get('display_columns', []))}개")
-        if list_config.get('display_columns'):
-            for idx, col in enumerate(list_config.get('display_columns', [])):
+        logger.info(f"     - columns: {len(columns)}개")
+        if columns:
+            for idx, col in enumerate(columns):
                 logger.info(f"       [{idx+1}] {col.get('name')} ({col.get('label')})")
 
         pagination = list_config.get('pagination', {})
@@ -510,7 +512,8 @@ async def wizard_step2_submit(
         # 저장된 데이터 재확인
         saved_data = db_manager.get_metadata(board_id, "list")
         if saved_data:
-            logger.info(f"[STEP2-8] ✅ 저장된 데이터 검증 완료: {len(saved_data.get('display_columns', []))}개 컬럼")
+            saved_columns = saved_data.get('columns') or saved_data.get('display_columns', [])
+            logger.info(f"[STEP2-8] ✅ 저장된 데이터 검증 완료: {len(saved_columns)}개 컬럼")
         else:
             logger.warn(f"[STEP2-8] ⚠️ 저장된 데이터 검증 실패: None 반환됨")
 
@@ -573,10 +576,11 @@ async def wizard_step3_submit(
         logger.info(f"[STEP3-2] 전송된 form_data 구조: {list(form_data.keys())}")
 
         # 입력폼 설정 상세 로깅
-        fields = create_edit.get("fields", [])
-        logger.info(f"[STEP3-3] create_edit 받음: {len(fields)}개 필드")
+        # Support both old and new keys for backward compatibility
+        columns = create_edit.get("columns") or create_edit.get("fields", [])
+        logger.info(f"[STEP3-3] create_edit 받음: {len(columns)}개 필드")
 
-        for idx, field in enumerate(fields, 1):
+        for idx, field in enumerate(columns, 1):
             logger.info(f"     [{idx}] 필드명: {field.get('name')}")
             logger.info(f"         - label: {field.get('label')}")
             logger.info(f"         - data_type: {field.get('data_type')}")
@@ -617,9 +621,9 @@ async def wizard_step3_submit(
         # 저장된 데이터 재확인
         saved_data = db_manager.get_metadata(board_id, "create_edit")
         if saved_data:
-            saved_fields = saved_data.get("fields", [])
-            logger.info(f"[STEP3-8] ✅ 저장된 데이터 검증 완료: {len(saved_fields)}개 필드")
-            for idx, field in enumerate(saved_fields, 1):
+            saved_columns = saved_data.get("columns") or saved_data.get("fields", [])
+            logger.info(f"[STEP3-8] ✅ 저장된 데이터 검증 완료: {len(saved_columns)}개 필드")
+            for idx, field in enumerate(saved_columns, 1):
                 logger.info(f"       [{idx}] {field.get('name')} ({field.get('label')})")
         else:
             logger.warn(f"[STEP3-8] ⚠️ 저장된 데이터 검증 실패: None 반환됨")
@@ -685,10 +689,11 @@ async def wizard_step4_submit(
         logger.info(f"[STEP4-2] 전송된 form_data 구조: {list(form_data.keys())}")
 
         # 표시 필드 상세 로깅
-        display_fields = view_config.get("display_fields", [])
-        logger.info(f"[STEP4-3] view 설정 받음: {len(display_fields)}개 필드")
+        # Support both old and new keys for backward compatibility
+        columns = view_config.get("columns") or view_config.get("display_fields", [])
+        logger.info(f"[STEP4-3] view 설정 받음: {len(columns)}개 필드")
 
-        for idx, field in enumerate(display_fields, 1):
+        for idx, field in enumerate(columns, 1):
             logger.info(f"     [{idx}] 필드명: {field.get('name')}")
             logger.info(f"         - label: {field.get('label')}")
             logger.info(f"         - display_type: {field.get('display_type')}")
@@ -761,9 +766,9 @@ async def wizard_step4_submit(
         # 저장된 데이터 재확인
         saved_data = db_manager.get_metadata(board_id, "view")
         if saved_data:
-            saved_fields = saved_data.get("display_fields", [])
-            logger.info(f"[STEP4-8] ✅ 저장된 데이터 검증 완료: {len(saved_fields)}개 필드")
-            for idx, field in enumerate(saved_fields, 1):
+            saved_columns = saved_data.get("columns") or saved_data.get("display_fields", [])
+            logger.info(f"[STEP4-8] ✅ 저장된 데이터 검증 완료: {len(saved_columns)}개 필드")
+            for idx, field in enumerate(saved_columns, 1):
                 logger.info(f"       [{idx}] {field.get('name')} ({field.get('label')})")
         else:
             logger.warn(f"[STEP4-8] ⚠️ 저장된 데이터 검증 실패: None 반환됨")
