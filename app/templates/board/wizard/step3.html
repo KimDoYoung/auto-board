@@ -126,27 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const elementTypeSelect = lastField.querySelector('.field-element-type');
                 const dataType = lastField.querySelector('.field-data-type').value;
 
-                // [1] 엘리먼트 타입 설정 (HTML Editor 처리)
-                let elementToSet = fieldData.element;
-                let useHtmlEditor = false;
-
-                if (fieldData.element === 'html_editor' && fieldData.element_type === 'html') {
-                    elementToSet = 'textarea';
-                    useHtmlEditor = true;
-                    console.log(`[2-${fieldIdx}] HTML Editor 감지 - textarea로 변환`);
-                }
-
-                // 동적으로 생성된 옵션 중에서 해당 element 선택
-                if (elementTypeSelect) {
-                    elementTypeSelect.value = elementToSet;
-                    console.log(`[2-${fieldIdx}] ✓ Element 타입 설정: ${elementToSet}`);
+                // [1] Element Type 설정
+                if (elementTypeSelect && fieldData.element_type) {
+                    elementTypeSelect.value = fieldData.element_type;
+                    console.log(`[2-${fieldIdx}] ✓ Element Type 설정: ${fieldData.element_type}`);
                 }
 
                 // [2] 기본 필드 설정
                 lastField.querySelector('.field-required').checked = fieldData.required || false;
-                lastField.querySelector('.field-width').value = fieldData.width || '100%';
-                lastField.querySelector('.field-help-text').value = fieldData.help_text || '';
-                lastField.querySelector('.field-inline-group').value = fieldData.inline_group || '';
                 console.log(`[2-${fieldIdx}] ✓ 기본 필드 설정 완료`);
 
                 // [3] Min/Max 값 설정
@@ -159,9 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`[2-${fieldIdx}] ✓ Max 값: ${fieldData.max_value}`);
                 }
 
-                // [4] Select 타입: options 복원
-                if (fieldData.element === 'select' && fieldData.options) {
-                    console.log(`[2-${fieldIdx}] Select 타입 - ${fieldData.options.length}개 옵션 복원 중...`);
+                // [4] Radio/Checkbox-Multi 타입: options 복원
+                if ((fieldData.element_type === 'radio' || fieldData.element_type === 'checkbox-multi') && fieldData.options) {
+                    console.log(`[2-${fieldIdx}] ${fieldData.element_type} 타입 - ${fieldData.options.length}개 옵션 복원 중...`);
                     const optionsList = lastField.querySelector('[data-options-list]');
                     if (optionsList) {
                         fieldData.options.forEach((opt, optIdx) => {
@@ -177,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // [5] Checkbox 타입: default_value 복원
-                if (fieldData.element === 'checkbox' && fieldData.default_value !== undefined) {
+                if (fieldData.element_type === 'checkbox' && fieldData.default_value !== undefined) {
                     const defaultValue = fieldData.default_value === true ? 'true' : 'false';
                     const radio = lastField.querySelector(`input[name="checkbox-default-${lastField.dataset.fieldIndex}"][value="${defaultValue}"]`);
                     if (radio) {
@@ -186,22 +173,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // [6] HTML Editor 사용 여부 복원
-                if (useHtmlEditor) {
-                    const htmlEditorCheckbox = lastField.querySelector('.field-use-html-editor');
-                    if (htmlEditorCheckbox) {
-                        htmlEditorCheckbox.checked = true;
-                        console.log(`[2-${fieldIdx}] ✓ HTML Editor 활성화`);
-                    }
-                }
-
-                // [7] 초기값 설정
-                if (fieldData.default_value && fieldData.element !== 'checkbox' && fieldData.element !== 'html_editor') {
+                // [6] 기본값 설정 (체크박스 제외)
+                if (fieldData.default_value && fieldData.element_type !== 'checkbox') {
                     lastField.querySelector('.field-default-value').value = fieldData.default_value;
                     console.log(`[2-${fieldIdx}] ✓ 기본값: ${fieldData.default_value}`);
                 }
 
-                // [8] 조건부 UI 업데이트 (옵션/체크박스 표시)
+                // [7] 조건부 UI 업데이트 (옵션/체크박스 표시)
                 wizardStep3.updateFieldOptions(lastField.dataset.fieldIndex);
                 console.log(`[2-${fieldIdx}] ✓ UI 업데이트 완료`);
             }

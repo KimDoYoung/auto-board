@@ -50,14 +50,11 @@
                 <!-- Columns to Display -->
                 <div>
                     <label class="block text-gray-700 font-medium mb-3">표시할 항목 선택</label>
-                    <div class="bg-gray-50 rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
+                    <div class="bg-gray-50 rounded-lg p-4 flex flex-wrap gap-3">
                         {% for column in columns %}
-                        <label class="flex items-center gap-3 cursor-pointer hover:bg-white p-2 rounded transition">
+                        <label class="flex items-center gap-2 cursor-pointer hover:bg-white px-3 py-2 rounded transition whitespace-nowrap">
                             <input type="checkbox" class="display-column w-4 h-4 text-indigo-600 rounded" value="{{ column.name }}" checked>
-                            <div>
-                                <span class="font-medium text-gray-700">{{ column.label }}</span>
-                                <span class="text-xs text-gray-500 ml-2">({{ column.name }})</span>
-                            </div>
+                            <span class="font-medium text-gray-700 text-sm">{{ column.label }}</span>
                         </label>
                         {% endfor %}
                     </div>

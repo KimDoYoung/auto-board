@@ -5,13 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: FastAPI",
+            "name": "AB-8000",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
             "args": [
                 "app.main:app",
                 "--reload"
+            ],
+            "jinja": true,
+            "env": {
+                "AUTOBOARD_PROFILE": "local"
+            }
+        },
+        {
+            "name": "AB-9000",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--reload",
+                "--port",
+                "9000",
+                "--host",
+                "0.0.0.0"
             ],
             "jinja": true,
             "env": {

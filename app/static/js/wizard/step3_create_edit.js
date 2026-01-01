@@ -16,102 +16,56 @@ const dataTypeLabels = {
     'datetime': '날짜시간'
 };
 
-// 엘리먼트 타입 한글 매핑 (label for elements, not element_type)
-const elementLabels = {
-    'input': '입력필드',
-    'textarea': '텍스트영역',
-    'select': '선택상자',
-    'checkbox': '체크박스',
-    'html_editor': 'HTML 에디터',
-    'file': '파일',
-    'range': '범위선택'
+// element_type 설정 (constants/element_type.py와 동기화)
+const elementTypesConfig = {
+    'input-text': { label: '문자열', htmlType: 'text' },
+    'input-html': { label: '문장', htmlType: null },
+    'input-date': { label: '날짜', htmlType: 'date' },
+    'input-integer': { label: '정수', htmlType: 'number' },
+    'input-real': { label: '실수', htmlType: 'number' },
+    'input-email': { label: '이메일', htmlType: 'email' },
+    'radio': { label: '라디오 버튼', htmlType: 'radio' },
+    'checkbox-multi': { label: '체크박스 (다중)', htmlType: 'checkbox' },
+    'checkbox': { label: '체크박스', htmlType: 'checkbox' }
 };
 
-// element_type의 한글 레이블 (input의 type 속성, select의 mode 등)
-const elementTypeValueLabels = {
-    'text': '텍스트',
-    'date': '날짜선택',
-    'number': '숫자',
-    'email': '이메일',
-    'tel': '전화번호',
-    'time': '시간',
-    'plain': '일반텍스트',
-    'single': '단일선택',
-    'toggle': '토글',
-    'slider': '슬라이더',
-    'file': '파일',
-    'html': 'HTML'
-};
-
-// 데이터 타입별 사용 가능한 엘리먼트
-const elementsByDataType = {
-    'string': ['input', 'select', 'range', 'file'],
-    'text': ['textarea', 'select', 'html_editor'],
-    'integer': ['input', 'range'],
-    'float': ['input', 'range'],
-    'boolean': ['checkbox', 'select'],
-    'ymd': ['input'],
-    'datetime': ['input']
-};
-
-// 엘리먼트별 사용 가능한 element_type
-const elementTypesByElement = {
-    'input': ['text', 'date', 'number', 'email', 'tel', 'time'],
-    'textarea': ['plain'],
-    'select': ['single'],
-    'checkbox': ['toggle'],
-    'range': ['slider'],
-    'file': ['file'],
-    'html_editor': ['html']
-};
-
-// 데이터 타입별 기본 엘리먼트
-const defaultElementByDataType = {
-    'string': 'input',
-    'text': 'textarea',
-    'integer': 'input',
-    'float': 'input',
+// 데이터 타입별 권장 element_type
+const elementTypeByDataType = {
+    'string': 'input-text',
+    'text': 'input-html',
+    'integer': 'input-integer',
+    'real': 'input-real',
     'boolean': 'checkbox',
-    'ymd': 'input',
-    'datetime': 'input'
-};
-
-// 엘리먼트별 기본 element_type
-const defaultElementTypeByElement = {
-    'input': 'text',
-    'textarea': 'plain',
-    'select': 'single',
-    'checkbox': 'toggle',
-    'range': 'slider',
-    'file': 'file',
-    'html_editor': 'html'
-};
-
-// 데이터 타입별 기본 element_type (element 선택 후 자동 설정)
-const defaultElementTypeByDataType = {
-    'string': 'text',
-    'text': 'plain',
-    'integer': 'number',
-    'float': 'number',
-    'boolean': 'toggle',
-    'ymd': 'date',
-    'datetime': 'text'
+    'ymd': 'input-date',
+    'datetime': 'input-date'
 };
 
 const wizardStep3 = {
     fieldCount: 0,
 
-    // 엘리먼트 타입 드롭다운 동적 채우기
+    // Element Type 드롭다운 동적 채우기 (element_type.py의 값 사용)
     populateElementTypes(selectElement, dataType) {
         selectElement.innerHTML = '';
-        const allowedElements = elementsByDataType[dataType] || [];
 
-        allowedElements.forEach(element => {
+        // 데이터 타입별 권장 element_type
+        const recommendedType = elementTypeByDataType[dataType];
+
+        // 모든 element_type 표시 (사용자가 선택하게 함)
+        Object.entries(elementTypesConfig).forEach(([value, config]) => {
             const option = document.createElement('option');
-            option.value = element;
-            option.textContent = elementLabels[element] || element;
+            option.value = value;
+            option.textContent = config.label;
+            // 권장 타입은 먼저 표시
+            if (value === recommendedType) {
+                option.textContent += ' (추천)';
+            }
             selectElement.appendChild(option);
         });
+
+        // 권장 타입으로 기본값 설정
+        if (recommendedType) {
+            selectElement.value = recommendedType;
+        }
     },
 
     addField(columnName) {
@@ -139,6 +93,7 @@ const wizardStep3 = {
 
         const fieldIndex = this.fieldCount;
         field.innerHTML = `
+            <!-- Header Row: Column Info, Required Checkbox, Control Buttons -->
             <div class="flex justify-between items-start gap-3">
                 <div class="flex gap-2 items-center flex-shrink-0 mt-1">
                     <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -146,7 +101,14 @@ const wizardStep3 = {
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">${columnInfo.label} (${dataTypeLabels[columnInfo.data_type] || columnInfo.data_type})</span>
+                    <div class="flex items-center gap-3">
+                        <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">${columnInfo.label}</span>
+                        <span class="text-xs text-gray-500">(${dataTypeLabels[columnInfo.data_type] || columnInfo.data_type})</span>
+                        <label class="flex items-center gap-2 cursor-pointer ml-auto">
+                            <input type="checkbox" class="field-required w-4 h-4 text-indigo-600 rounded" checked>
+                            <span class="text-gray-700 text-xs font-medium">필수</span>
+                        </label>
+                    </div>
                     <input type="hidden" class="field-name" value="${columnName}">
                     <input type="hidden" class="field-data-type" value="${columnInfo.data_type}">
                 </div>
@@ -157,63 +119,37 @@ const wizardStep3 = {
                 </div>
             </div>
 
-            <!-- Row 1: Element Type, Required, Width -->
-            <div class="grid grid-cols-3 gap-3">
+            <!-- Row 1: Element Type, Default Value, Min Value, Max Value -->
+            <div class="grid gap-3" style="grid-template-columns: 2fr 1.5fr 1fr 1fr;">
                 <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">엘리먼트 타입</label>
+                    <label class="block text-gray-700 font-medium text-xs mb-1">입력 요소 타입</label>
                     <select class="field-element-type w-full px-3 py-2 border border-gray-300 rounded text-sm" onchange="wizardStep3.updateFieldOptions(${fieldIndex})">
                         <!-- Options will be populated dynamically -->
                     </select>
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">너비</label>
-                    <input type="text" class="field-width w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="100%, 50%, 30%, auto" value="100%">
-                </div>
-                <div>
-                    <label class="flex items-center gap-2 cursor-pointer" style="margin-top: 24px;">
-                        <input type="checkbox" class="field-required w-4 h-4 text-indigo-600 rounded" checked>
-                        <span class="text-gray-700 text-sm">필수 입력</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Row 2: Inline Group, Help Text -->
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">인라인 그룹</label>
-                    <input type="text" class="field-inline-group w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: header, meta, options">
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">도움말</label>
-                    <input type="text" class="field-help-text w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: 기록 날짜를 선택하세요">
-                </div>
-            </div>
-
-            <!-- Row 3: Default Value, Min Value, Max Value -->
-            <div class="grid grid-cols-3 gap-3">
-                <div>
                     <label class="block text-gray-700 font-medium text-xs mb-1">기본값</label>
-                    <input type="text" class="field-default-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: today, 5">
+                    <input type="text" class="field-default-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="">
                 </div>
-                <div class="field-min-max-container">
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Min 값</label>
-                    <input type="text" class="field-min-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: 0, 1">
+                <div class="field-min-value-container" style="display: none;">
+                    <label class="block text-gray-700 font-medium text-xs mb-1">Min</label>
+                    <input type="text" class="field-min-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="">
                 </div>
-                <div class="field-min-max-container">
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Max 값</label>
-                    <input type="text" class="field-max-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="예: 100, 10">
+                <div class="field-max-value-container" style="display: none;">
+                    <label class="block text-gray-700 font-medium text-xs mb-1">Max</label>
+                    <input type="text" class="field-max-value w-full px-3 py-2 border border-gray-300 rounded text-sm" placeholder="">
                 </div>
             </div>
 
-            <!-- Row 4: HTML Editor (Conditional) -->
+            <!-- Row 2: HTML Editor (Conditional - only for input-html) -->
             <div class="field-html-editor-container" style="display: none;">
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" class="field-use-html-editor w-4 h-4 text-indigo-600 rounded">
+                    <input type="checkbox" class="field-use-html-editor w-4 h-4 text-indigo-600 rounded" checked>
                     <span class="text-gray-700 text-sm">HTML 에디터 사용</span>
                 </label>
             </div>
 
-            <!-- Select Options (Hidden by default) -->
+            <!-- Select/Radio Options (Hidden by default) -->
             <div class="field-select-options" style="display: none;">
                 <label class="block text-gray-700 font-medium text-xs mb-2">선택 옵션</label>
                 <div class="space-y-2 mb-2" data-options-list="${fieldIndex}">
@@ -224,7 +160,7 @@ const wizardStep3 = {
                 </button>
             </div>
 
-            <!-- Checkbox Default (Hidden by default) -->
+            <!-- Checkbox Default Value (Hidden by default) -->
             <div class="field-checkbox-default" style="display: none;">
                 <label class="block text-gray-700 font-medium text-xs mb-2">기본값</label>
                 <div class="flex gap-4">
@@ -242,28 +178,12 @@ const wizardStep3 = {
 
         container.appendChild(field);
 
-        // 엘리먼트 타입 드롭다운 동적 채우기
+        // Element Type 드롭다운 동적 채우기
         const selectElement = field.querySelector('.field-element-type');
         this.populateElementTypes(selectElement, columnInfo.data_type);
 
-        // [1] 데이터 타입에 따라 기본 엘리먼트 설정
-        const defaultElement = defaultElementByDataType[columnInfo.data_type] || elementsByDataType[columnInfo.data_type]?.[0];
-        if (defaultElement && selectElement.querySelector(`option[value="${defaultElement}"]`)) {
-            selectElement.value = defaultElement;
-        }
-
         // 조건부 UI 업데이트
         this.updateFieldOptions(fieldIndex);
-
-        // 기존 데이터가 있으면 채우기
-        if (typeof fieldData === 'object' && fieldData !== null) {
-            field.querySelector('.field-element-type').value = fieldData.element;
-            field.querySelector('.field-required').checked = fieldData.required || false;
-            field.querySelector('.field-width').value = fieldData.width || '100%';
-            field.querySelector('.field-help-text').value = fieldData.help_text || '';
-            field.querySelector('.field-inline-group').value = fieldData.inline_group || '';
-            field.querySelector('.field-default-value').value = fieldData.default_value || '';
-        }
     },
 
     moveFieldUp(index) {
@@ -332,33 +252,31 @@ const wizardStep3 = {
         const selectOptionsDiv = field.querySelector('.field-select-options');
         const checkboxDefaultDiv = field.querySelector('.field-checkbox-default');
         const htmlEditorContainer = field.querySelector('.field-html-editor-container');
-        const htmlEditorCheckbox = field.querySelector('.field-use-html-editor');
-        const minMaxContainers = field.querySelectorAll('.field-min-max-container');
+        const minValueContainer = field.querySelector('.field-min-value-container');
+        const maxValueContainer = field.querySelector('.field-max-value-container');
 
         // 모두 숨기기
         selectOptionsDiv.style.display = 'none';
         checkboxDefaultDiv.style.display = 'none';
+        htmlEditorContainer.style.display = 'none';
 
-        // Min/Max는 숫자 타입(integer, float)일 때만 표시
-        const numericTypes = ['integer', 'float'];
+        // Min/Max는 정수, 실수 타입일 때만 표시
+        const numericTypes = ['integer', 'real'];
         const showMinMax = numericTypes.includes(dataType);
-        minMaxContainers.forEach(container => {
-            container.style.display = showMinMax ? 'block' : 'none';
-        });
+        minValueContainer.style.display = showMinMax ? 'block' : 'none';
+        maxValueContainer.style.display = showMinMax ? 'block' : 'none';
 
-        // HTML 에디터는 텍스트/문장 타입에만 표시 (숫자, 날짜 타입은 숨김)
-        const textOnlyTypes = ['string', 'text'];
-        htmlEditorContainer.style.display = textOnlyTypes.includes(dataType) ? 'block' : 'none';
-
-        // 문장(text) 타입일 경우 HTML 에디터 기본값 체크
-        if (dataType === 'text' && htmlEditorCheckbox) {
-            htmlEditorCheckbox.checked = true;
+        // HTML 에디터는 input-html 타입일 때만 표시
+        if (elementType === 'input-html') {
+            htmlEditorContainer.style.display = 'block';
         }
 
-        // 타입에 따라 표시
-        if (elementType === 'select') {
+        // 선택지 필요한 타입
+        if (elementType === 'radio' || elementType === 'checkbox-multi') {
             selectOptionsDiv.style.display = 'block';
-        } else if (elementType === 'checkbox') {
+        }
+        // 체크박스 기본값
+        else if (elementType === 'checkbox') {
             checkboxDefaultDiv.style.display = 'block';
         }
     },
@@ -407,8 +325,8 @@ const wizardStep3 = {
                 return;
             }
 
-            const element = elementTypeEl.value;
-            console.log(`[2-${index}] ✓ 엘리먼트 타입: ${element}`);
+            const elementType = elementTypeEl.value;
+            console.log(`[2-${index}] ✓ Element Type: ${elementType}`);
 
             const dataTypeEl = fieldEl.querySelector('.field-data-type');
             const dataType = dataTypeEl ? dataTypeEl.value : 'unknown';
@@ -421,36 +339,20 @@ const wizardStep3 = {
                 name: name,
                 label: columnInfo ? columnInfo.label : name,
                 data_type: dataType,
-                element: element,
-                // element_type는 data_type 맵을 우선 사용 (더 정확함), 없으면 element 맵 사용
-                element_type: defaultElementTypeByDataType[dataType] || defaultElementTypeByElement[element] || 'text',
+                element_type: elementType,
                 required: fieldEl.querySelector('.field-required').checked,
-                width: fieldEl.querySelector('.field-width').value || '100%',
                 order: index + 1  // 화면 상 순서대로 order 설정
             };
 
             console.log(`[2-${index}] 기본 필드:`, {
                 name: fieldData.name,
                 label: fieldData.label,
-                element: fieldData.element,
                 element_type: fieldData.element_type,
                 required: fieldData.required,
-                width: fieldData.width
+                data_type: fieldData.data_type
             });
 
             // 선택적 필드
-            const helpText = fieldEl.querySelector('.field-help-text').value.trim();
-            if (helpText) {
-                fieldData.help_text = helpText;
-                console.log(`[2-${index}] ✓ 도움말: ${helpText}`);
-            }
-
-            const inlineGroup = fieldEl.querySelector('.field-inline-group').value.trim();
-            if (inlineGroup) {
-                fieldData.inline_group = inlineGroup;
-                console.log(`[2-${index}] ✓ 인라인 그룹: ${inlineGroup}`);
-            }
-
             const defaultValue = fieldEl.querySelector('.field-default-value').value.trim();
             if (defaultValue) {
                 fieldData.default_value = defaultValue;
@@ -471,9 +373,9 @@ const wizardStep3 = {
                 console.log(`[2-${index}] ✓ Max 값: ${fieldData.max_value}`);
             }
 
-            // Select 타입: options 수집
-            if (element === 'select') {
-                console.log(`[2-${index}] Select 타입 - 옵션 수집 중...`);
+            // Radio/Checkbox-Multi 타입: options 수집
+            if (elementType === 'radio' || elementType === 'checkbox-multi') {
+                console.log(`[2-${index}] ${elementType} 타입 - 옵션 수집 중...`);
                 const optionsList = fieldEl.querySelector('[data-options-list]');
                 if (optionsList) {
                     const options = [];
@@ -493,22 +395,12 @@ const wizardStep3 = {
             }
 
             // Checkbox 타입: default_value를 true/false로 설정
-            if (element === 'checkbox') {
+            if (elementType === 'checkbox') {
                 console.log(`[2-${index}] Checkbox 타입 - 기본값 확인 중...`);
                 const checkboxDefault = fieldEl.querySelector('.field-checkbox-default-value:checked');
                 if (checkboxDefault) {
                     fieldData.default_value = checkboxDefault.value === 'true';
                     console.log(`[2-${index}] ✓ Checkbox 기본값: ${fieldData.default_value}`);
-                }
-            }
-
-            // HTML Editor 사용 여부
-            if (element === 'textarea') {
-                const htmlEditorCheckbox = fieldEl.querySelector('.field-use-html-editor');
-                if (htmlEditorCheckbox && htmlEditorCheckbox.checked) {
-                    fieldData.element = 'html_editor';
-                    fieldData.element_type = 'html';
-                    console.log(`[2-${index}] ✓ HTML Editor 활성화됨`);
                 }
             }
 
